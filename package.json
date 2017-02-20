@@ -1,0 +1,33 @@
+{
+  "name": "rollup-start",
+  "version": "1.0.0",
+  "description": "start with rollup",
+  "main": "index.js",
+  "scripts": {
+    "dev": "set NODE_ENV=development && rollup --watch --config ./config.js",
+    "build": "set NODE_ENV=production && rollup --config ./config.js",
+    "server": "node ./server/index.js"
+  },
+  "keywords": [
+    "rolup",
+    "es6"
+  ],
+  "author": "tonis",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.16.0",
+    "express": "^4.14.1",
+    "pixi.js": "^4.3.4",
+    "rollup": "latest",
+    "rollup-plugin-buble": "^0.15.0",
+    "rollup-plugin-commonjs": "^6.0.0",
+    "rollup-plugin-json": "latest",
+    "rollup-plugin-node-resolve": "latest",
+    "rollup-plugin-npm": "^2.0.0",
+    "rollup-plugin-replace": "^1.1.1",
+    "rollup-plugin-uglify": "latest",
+    "rollup-watch": "^2.5.0",
+    "uuid": "^3.0.1",
+    "uws": "^0.12.0"
+  }
+}
