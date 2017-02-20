@@ -217,15 +217,19 @@ Actions.prototype.playerTurn = function playerTurn (playerData, values) {
 };
 
 var resources = [
-  { key: 'worm', src: './images/worm.png' },
-  { key: 'cat', src: './images/cat.png' },
-  { key: 'gun', src: './images/gun.png' },
-  { key: 'bullet', src: './images/bullet.png' }
+  { key: 'worm', src: './images/player/worm.png' },
+  { key: 'cat', src: './images/player/cat.png' },
+  { key: 'gun', src: './images/player/gun.png' },
+  { key: 'bullet', src: './images/player/bullet.png' },
+  { key: 'desertBG', src: './images/worlds/desert/desertBG.png' }
 ];
-var renderConfig = { width: 1500, height: 600 };
+var renderConfig = {
+    width: window.innerWidth,
+    height: window.innerHeight - 10
+  };
 
 var socketConfig = {
-  url: 'ws://192.168.76.12:3000'
+  url: 'ws://localhost:3000'
 };
 
 var socket = new Socket(socketConfig);
@@ -323,9 +327,9 @@ PIXI.ticker.shared.add(function () {
     }
     if (
       bullet.x > renderConfig.width ||
-        bullet.x === 0 ||
-        bullet.y > renderConfig.height ||
-        bullet.y === 0
+      bullet.x === 0 ||
+      bullet.y > renderConfig.height ||
+      bullet.y === 0
     ) {
       renderer.stage.removeChild(bullet);
       gamefield.actions.shots.delete(bullet.uuid);

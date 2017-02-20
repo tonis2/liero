@@ -3,7 +3,7 @@ import Socket from './sockets';
 import { Gamefield } from './gamelogic';
 import { renderConfig, resources } from './helpers/configs';
 const socketConfig = {
-  url: 'ws://192.168.76.12:3000'
+  url: 'ws://localhost:3000'
 };
 
 const socket = new Socket(socketConfig);
@@ -101,9 +101,9 @@ PIXI.ticker.shared.add(() => {
     }
     if (
       bullet.x > renderConfig.width ||
-        bullet.x === 0 ||
-        bullet.y > renderConfig.height ||
-        bullet.y === 0
+      bullet.x === 0 ||
+      bullet.y > renderConfig.height ||
+      bullet.y === 0
     ) {
       renderer.stage.removeChild(bullet);
       gamefield.actions.shots.delete(bullet.uuid);
