@@ -122,6 +122,7 @@ var Gamefield$$1 = function Gamefield$$1(stage) {
   this.player = null;
   this.stage = stage;
   this.actions = new Actions(stage);
+  this.world = new World(stage);
 };
 
 Gamefield$$1.prototype.update = function update (data) {
@@ -178,17 +179,16 @@ Gamefield$$1.prototype.findDeletedPlayer = function findDeletedPlayer (data) {
   });
 };
 
-Gamefield$$1.prototype.initialize = function initialize (players) {
+Gamefield$$1.prototype.initialize = function initialize (data, world) {
     var this$1 = this;
 
-  setTimeout(
-    function () {
-      players.forEach(function (player) {
-        this$1.addPlayer(player);
-      });
-    },
-    100
-  );
+  this.player = data.currentPlayer;
+  PIXI.loader.load(function () {
+    this$1.world.renderWorld(world);
+    data.payload.forEach(function (player) {
+      this$1.addPlayer(player);
+    });
+  });
 };
 
 var Actions = function Actions(stage) {
@@ -216,6 +216,19 @@ Actions.prototype.playerTurn = function playerTurn (playerData, values) {
   }
 };
 
+var World = function World(stage) {
+  this.stage = stage;
+  this.renderWorld = this.renderWorld.bind(this);
+};
+World.prototype.renderWorld = function renderWorld (config) {
+  var background = new PIXI.Sprite(
+    PIXI.loader.resources[config.bg].texture
+  );
+  background.width = config.width;
+  background.height = config.height;
+  this.stage.addChild(background);
+};
+
 var resources = [
   { key: 'worm', src: './images/player/worm.png' },
   { key: 'cat', src: './images/player/cat.png' },
@@ -238,15 +251,18 @@ var Stage = new PIXI.Container();
 var gamefield = new Gamefield$$1(Stage);
 var renderer = new Render$1(renderConfig, Stage);
 var key = renderer.keys.keymap;
-
+var world = {
+  bg: 'desertBG',
+  width: renderer.renderer.width,
+  height: renderer.renderer.height
+};
 socket.connection.onmessage = function (data) {
   var response = JSON.parse(data.data);
   switch (response.type) {
     case 'init':
-      gamefield.player = response.currentPlayer;
-      renderer.loadResources(resources);
-      PIXI.loader.load(gamefield.initialize(response.payload));
       renderer.run();
+      renderer.loadResources(resources);
+      gamefield.initialize(response, world);
       break;
     case 'update':
       gamefield.update(response.payload);
@@ -315,6 +331,10 @@ PIXI.ticker.shared.add(function () {
 
   if (currentPlayer) {
     animations(currentPlayer);
+    renderer.stage.pivot.x = currentPlayer.position.x / 3;
+    renderer.stage.pivot.y = currentPlayer.position.y / 3;
+    // renderer.stage.position.x = renderer.width / 2;
+    // renderer.stage.position.y = renderer.height / 2;
   }
 
   gamefield.actions.shots.forEach(function (bullet) {

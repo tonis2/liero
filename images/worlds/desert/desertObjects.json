@@ -1,0 +1,124 @@
+{"frames": {
+
+"Bush (1).png":
+{
+	"frame": {"x":316,"y":1,"w":145,"h":88},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":145,"h":88},
+	"sourceSize": {"w":145,"h":88}
+},
+"Bush (2).png":
+{
+	"frame": {"x":316,"y":91,"w":131,"h":74},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":131,"h":74},
+	"sourceSize": {"w":131,"h":74}
+},
+"Cactus (1).png":
+{
+	"frame": {"x":316,"y":242,"w":108,"h":111},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":108,"h":111},
+	"sourceSize": {"w":108,"h":111}
+},
+"Cactus (2).png":
+{
+	"frame": {"x":295,"y":408,"w":70,"h":45},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":70,"h":45},
+	"sourceSize": {"w":70,"h":45}
+},
+"Cactus (3).png":
+{
+	"frame": {"x":207,"y":367,"w":86,"h":96},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":86,"h":96},
+	"sourceSize": {"w":86,"h":96}
+},
+"Crate.png":
+{
+	"frame": {"x":1,"y":355,"w":101,"h":101},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":101,"h":101},
+	"sourceSize": {"w":101,"h":101}
+},
+"Grass (1).png":
+{
+	"frame": {"x":207,"y":263,"w":102,"h":50},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":102,"h":50},
+	"sourceSize": {"w":102,"h":50}
+},
+"Grass (2).png":
+{
+	"frame": {"x":207,"y":315,"w":102,"h":50},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":102,"h":50},
+	"sourceSize": {"w":102,"h":50}
+},
+"Sign.png":
+{
+	"frame": {"x":1,"y":263,"w":85,"h":88},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":85,"h":88},
+	"sourceSize": {"w":85,"h":88}
+},
+"SignArrow.png":
+{
+	"frame": {"x":88,"y":263,"w":84,"h":87},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":84,"h":87},
+	"sourceSize": {"w":84,"h":87}
+},
+"Skeleton.png":
+{
+	"frame": {"x":311,"y":355,"w":150,"h":51},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":150,"h":51},
+	"sourceSize": {"w":150,"h":51}
+},
+"Stone.png":
+{
+	"frame": {"x":316,"y":167,"w":124,"h":73},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":124,"h":73},
+	"sourceSize": {"w":124,"h":73}
+},
+"StoneBlock.png":
+{
+	"frame": {"x":104,"y":355,"w":101,"h":99},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":101,"h":99},
+	"sourceSize": {"w":101,"h":99}
+},
+"Tree.png":
+{
+	"frame": {"x":1,"y":1,"w":313,"h":260},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":313,"h":260},
+	"sourceSize": {"w":313,"h":260}
+}},
+"meta": {
+	"app": "http://www.codeandweb.com/texturepacker",
+	"version": "1.0",
+	"image": "desertObjects.png",
+	"format": "RGBA8888",
+	"size": {"w":462,"h":464},
+	"scale": "1",
+	"smartupdate": "$TexturePacker:SmartUpdate:f75c568112605fdc6e8705389430b142:ca74173a48049d40c190bd104f221bfa:95ae666481bc7cdabbbef7652ec1d3f3$"
+}
+}

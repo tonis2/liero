@@ -1,11 +1,12 @@
 import { Player, Weapon, Bullet } from '../models';
-import { Actions } from './index';
+import { Actions, World } from './index';
 export default class Gamefield {
   constructor(stage) {
     this.resources = new Map();
     this.player = null;
     this.stage = stage;
     this.actions = new Actions(stage);
+    this.world = new World(stage);
   }
 
   update(data) {
@@ -58,14 +59,13 @@ export default class Gamefield {
     });
   }
 
-  initialize(players) {
-    setTimeout(
-      () => {
-        players.forEach(player => {
-          this.addPlayer(player);
-        });
-      },
-      100
-    );
+  initialize(data, world) {
+    this.player = data.currentPlayer;
+    PIXI.loader.load(() => {
+      this.world.renderWorld(world);
+      data.payload.forEach(player => {
+        this.addPlayer(player);
+      });
+    });
   }
 }

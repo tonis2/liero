@@ -12,15 +12,18 @@ const Stage = new PIXI.Container();
 const gamefield = new Gamefield(Stage);
 const renderer = new Renderer(renderConfig, Stage);
 const key = renderer.keys.keymap;
-
+const world = {
+  bg: 'desertBG',
+  width: renderer.renderer.width,
+  height: renderer.renderer.height
+};
 socket.connection.onmessage = data => {
   const response = JSON.parse(data.data);
   switch (response.type) {
     case 'init':
-      gamefield.player = response.currentPlayer;
-      renderer.loadResources(resources);
-      PIXI.loader.load(gamefield.initialize(response.payload));
       renderer.run();
+      renderer.loadResources(resources);
+      gamefield.initialize(response, world);
       break;
     case 'update':
       gamefield.update(response.payload);
@@ -89,6 +92,10 @@ PIXI.ticker.shared.add(() => {
 
   if (currentPlayer) {
     animations(currentPlayer);
+    renderer.stage.pivot.x = currentPlayer.position.x / 3;
+    renderer.stage.pivot.y = currentPlayer.position.y / 3;
+    // renderer.stage.position.x = renderer.width / 2;
+    // renderer.stage.position.y = renderer.height / 2;
   }
 
   gamefield.actions.shots.forEach(bullet => {
