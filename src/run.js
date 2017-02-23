@@ -7,12 +7,18 @@ const socketConfig = {
 };
 
 const socket = new Socket(socketConfig);
+const World = new PIXI.Container();
 const Stage = new PIXI.Container();
+const Background = new PIXI.Container();
 
-const gamefield = new Gamefield(Stage);
-const renderer = new Renderer(renderConfig, Stage);
+World.addChild(Background);
+World.addChild(Stage);
+
+
+const gamefield = new Gamefield(Stage, Background);
+const renderer = new Renderer(renderConfig, World);
 const key = renderer.keys.keymap;
-const world = {
+const worldCFG = {
   bg: 'desertBG',
   width: renderer.renderer.width,
   height: renderer.renderer.height
@@ -23,7 +29,7 @@ socket.connection.onmessage = data => {
     case 'init':
       renderer.run();
       renderer.loadResources(resources);
-      gamefield.initialize(response, world);
+      gamefield.initialize(response, worldCFG);
       break;
     case 'update':
       gamefield.update(response.payload);
@@ -92,10 +98,8 @@ PIXI.ticker.shared.add(() => {
 
   if (currentPlayer) {
     animations(currentPlayer);
-    renderer.stage.pivot.x = currentPlayer.position.x / 3;
-    renderer.stage.pivot.y = currentPlayer.position.y / 3;
-    // renderer.stage.position.x = renderer.width / 2;
-    // renderer.stage.position.y = renderer.height / 2;
+    Stage.pivot.x = currentPlayer.position.x / 3;
+    Stage.pivot.y = currentPlayer.position.y / 3;
   }
 
   gamefield.actions.shots.forEach(bullet => {
@@ -112,7 +116,7 @@ PIXI.ticker.shared.add(() => {
       bullet.y > renderConfig.height ||
       bullet.y === 0
     ) {
-      renderer.stage.removeChild(bullet);
+      Stage.removeChild(bullet);
       gamefield.actions.shots.delete(bullet.uuid);
     }
   });

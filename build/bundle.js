@@ -38,13 +38,13 @@ ListenKeys.prototype.listenKeys = function listenKeys (keys$$1) {
   window.onkeyup = keysReleased;
 };
 
-var Render$1 = function Render(config, stage) {
+var Render$1 = function Render(config, world) {
   this.renderer = new PIXI.WebGLRenderer(config.width, config.height);
   this.renderer.backgroundColor = 0x061639;
   this.config = config;
   this.keys = new ListenKeys();
   this.run = this.run.bind(this);
-  this.stage = stage;
+  this.world = world;
   document.body.appendChild(this.renderer.view);
 };
 
@@ -56,7 +56,7 @@ Render$1.prototype.loadResources = function loadResources (resources) {
 
 Render$1.prototype.run = function run () {
   requestAnimationFrame(this.run);
-  this.renderer.render(this.stage);
+  this.renderer.render(this.world);
 };
 
 var Socket = function Socket(config) {
@@ -117,12 +117,12 @@ var Weapon = function Weapon(params) {
   return this.weapon;
 };
 
-var Gamefield$$1 = function Gamefield$$1(stage) {
+var Gamefield$$1 = function Gamefield$$1(stage, background) {
   this.resources = new Map();
   this.player = null;
   this.stage = stage;
   this.actions = new Actions(stage);
-  this.world = new World(stage);
+  this.background = background;
 };
 
 Gamefield$$1.prototype.update = function update (data) {
@@ -179,15 +179,36 @@ Gamefield$$1.prototype.findDeletedPlayer = function findDeletedPlayer (data) {
   });
 };
 
-Gamefield$$1.prototype.initialize = function initialize (data, world) {
+Gamefield$$1.prototype.addBackground = function addBackground (config) {
+  var backgroundIMG = new PIXI.Sprite(
+    PIXI.loader.resources[config.bg].texture
+  );
+  backgroundIMG.width = config.width;
+  backgroundIMG.height = config.height;
+  this.background.addChild(backgroundIMG);
+};
+
+Gamefield$$1.prototype.addMapObjects = function addMapObjects () {
+  var Bush = new PIXI.Sprite.fromFrame('Bush1');
+  var Bush2 = new PIXI.Sprite.fromFrame('Bush1');
+  Bush.x = 350;
+  Bush.y = 350;
+  Bush2.x = 1850;
+  Bush2.y = 350;
+  this.stage.addChild(Bush);
+  this.stage.addChild(Bush2);
+};
+
+Gamefield$$1.prototype.initialize = function initialize (data, config) {
     var this$1 = this;
 
   this.player = data.currentPlayer;
   PIXI.loader.load(function () {
-    this$1.world.renderWorld(world);
+    this$1.addBackground(config);
     data.payload.forEach(function (player) {
       this$1.addPlayer(player);
     });
+    this$1.addMapObjects();
   });
 };
 
@@ -216,25 +237,13 @@ Actions.prototype.playerTurn = function playerTurn (playerData, values) {
   }
 };
 
-var World = function World(stage) {
-  this.stage = stage;
-  this.renderWorld = this.renderWorld.bind(this);
-};
-World.prototype.renderWorld = function renderWorld (config) {
-  var background = new PIXI.Sprite(
-    PIXI.loader.resources[config.bg].texture
-  );
-  background.width = config.width;
-  background.height = config.height;
-  this.stage.addChild(background);
-};
-
 var resources = [
   { key: 'worm', src: './images/player/worm.png' },
   { key: 'cat', src: './images/player/cat.png' },
   { key: 'gun', src: './images/player/gun.png' },
   { key: 'bullet', src: './images/player/bullet.png' },
-  { key: 'desertBG', src: './images/worlds/desert/desertBG.png' }
+  { key: 'desertBG', src: './images/worlds/desert/desertBG.png' },
+  { key: 'desertSprites', src: './images/worlds/desert/desertObjects.json' }
 ];
 var renderConfig = {
     width: window.innerWidth,
@@ -246,12 +255,18 @@ var socketConfig = {
 };
 
 var socket = new Socket(socketConfig);
+var World = new PIXI.Container();
 var Stage = new PIXI.Container();
+var Background = new PIXI.Container();
 
-var gamefield = new Gamefield$$1(Stage);
-var renderer = new Render$1(renderConfig, Stage);
+World.addChild(Background);
+World.addChild(Stage);
+
+
+var gamefield = new Gamefield$$1(Stage, Background);
+var renderer = new Render$1(renderConfig, World);
 var key = renderer.keys.keymap;
-var world = {
+var worldCFG = {
   bg: 'desertBG',
   width: renderer.renderer.width,
   height: renderer.renderer.height
@@ -262,7 +277,7 @@ socket.connection.onmessage = function (data) {
     case 'init':
       renderer.run();
       renderer.loadResources(resources);
-      gamefield.initialize(response, world);
+      gamefield.initialize(response, worldCFG);
       break;
     case 'update':
       gamefield.update(response.payload);
@@ -331,10 +346,8 @@ PIXI.ticker.shared.add(function () {
 
   if (currentPlayer) {
     animations(currentPlayer);
-    renderer.stage.pivot.x = currentPlayer.position.x / 3;
-    renderer.stage.pivot.y = currentPlayer.position.y / 3;
-    // renderer.stage.position.x = renderer.width / 2;
-    // renderer.stage.position.y = renderer.height / 2;
+    Stage.pivot.x = currentPlayer.position.x / 3;
+    Stage.pivot.y = currentPlayer.position.y / 3;
   }
 
   gamefield.actions.shots.forEach(function (bullet) {
@@ -351,7 +364,7 @@ PIXI.ticker.shared.add(function () {
       bullet.y > renderConfig.height ||
       bullet.y === 0
     ) {
-      renderer.stage.removeChild(bullet);
+      Stage.removeChild(bullet);
       gamefield.actions.shots.delete(bullet.uuid);
     }
   });

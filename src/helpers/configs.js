@@ -3,7 +3,8 @@ export const resources = [
   { key: 'cat', src: './images/player/cat.png' },
   { key: 'gun', src: './images/player/gun.png' },
   { key: 'bullet', src: './images/player/bullet.png' },
-  { key: 'desertBG', src: './images/worlds/desert/desertBG.png' }
+  { key: 'desertBG', src: './images/worlds/desert/desertBG.png' },
+  { key: 'desertSprites', src: './images/worlds/desert/desertObjects.json' }
 ],
   renderConfig = {
     width: window.innerWidth,

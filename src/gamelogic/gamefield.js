@@ -1,12 +1,12 @@
 import { Player, Weapon, Bullet } from '../models';
-import { Actions, World } from './index';
+import { Actions } from './index';
 export default class Gamefield {
-  constructor(stage) {
+  constructor(stage, background) {
     this.resources = new Map();
     this.player = null;
     this.stage = stage;
     this.actions = new Actions(stage);
-    this.world = new World(stage);
+    this.background = background;
   }
 
   update(data) {
@@ -59,13 +59,34 @@ export default class Gamefield {
     });
   }
 
-  initialize(data, world) {
+  addBackground(config) {
+    const backgroundIMG = new PIXI.Sprite(
+      PIXI.loader.resources[config.bg].texture
+    );
+    backgroundIMG.width = config.width;
+    backgroundIMG.height = config.height;
+    this.background.addChild(backgroundIMG);
+  }
+
+  addMapObjects() {
+    const Bush = new PIXI.Sprite.fromFrame('Bush1');
+    const Bush2 = new PIXI.Sprite.fromFrame('Bush1');
+    Bush.x = 350;
+    Bush.y = 350;
+    Bush2.x = 1850;
+    Bush2.y = 350;
+    this.stage.addChild(Bush);
+    this.stage.addChild(Bush2);
+  }
+
+  initialize(data, config) {
     this.player = data.currentPlayer;
     PIXI.loader.load(() => {
-      this.world.renderWorld(world);
+      this.addBackground(config);
       data.payload.forEach(player => {
         this.addPlayer(player);
       });
+      this.addMapObjects();
     });
   }
 }
