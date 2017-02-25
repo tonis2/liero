@@ -1,35 +1,35 @@
 import Renderer from './renderer';
 import Socket from './sockets';
 import { Gamefield } from './gamelogic';
-import { renderConfig, resources } from './helpers/configs';
+import { renderConfig } from './helpers/configs';
 const socketConfig = {
   url: 'ws://localhost:3000'
 };
 
 const socket = new Socket(socketConfig);
-const World = new PIXI.Container();
-const Stage = new PIXI.Container();
-const Background = new PIXI.Container();
+const renderer = new Renderer(renderConfig);
 
-World.addChild(Background);
-World.addChild(Stage);
+const gamefield = new Gamefield(renderer.stage, renderer.background);
 
-
-const gamefield = new Gamefield(Stage, Background);
-const renderer = new Renderer(renderConfig, World);
 const key = renderer.keys.keymap;
-const worldCFG = {
-  bg: 'desertBG',
-  width: renderer.renderer.width,
-  height: renderer.renderer.height
-};
 socket.connection.onmessage = data => {
   const response = JSON.parse(data.data);
   switch (response.type) {
     case 'init':
-      renderer.run();
+      const resources = [
+        { key: 'skin', src: response.currentSkin.objects },
+        { key: 'background', src: response.currentMap.background },
+        { key: 'mapObjects', src: response.currentMap.objects },
+        { key: 'tiles', src: response.currentMap.tiles }
+      ];
+
       renderer.loadResources(resources);
-      gamefield.initialize(response, worldCFG);
+      gamefield.initialize(response).then(() => {
+        renderer.run();
+        socket.send({
+          type: 'ready'
+        });
+      });
       break;
     case 'update':
       gamefield.update(response.payload);
@@ -98,8 +98,8 @@ PIXI.ticker.shared.add(() => {
 
   if (currentPlayer) {
     animations(currentPlayer);
-    Stage.pivot.x = currentPlayer.position.x / 3;
-    Stage.pivot.y = currentPlayer.position.y / 3;
+    renderer.stage.pivot.x = currentPlayer.position.x / 3;
+    renderer.stage.pivot.y = currentPlayer.position.y / 3;
   }
 
   gamefield.actions.shots.forEach(bullet => {
@@ -116,7 +116,7 @@ PIXI.ticker.shared.add(() => {
       bullet.y > renderConfig.height ||
       bullet.y === 0
     ) {
-      Stage.removeChild(bullet);
+      renderer.stage.removeChild(bullet);
       gamefield.actions.shots.delete(bullet.uuid);
     }
   });

@@ -44,8 +44,13 @@ var Render$1 = function Render(config, world) {
   this.config = config;
   this.keys = new ListenKeys();
   this.run = this.run.bind(this);
-  this.world = world;
   document.body.appendChild(this.renderer.view);
+  this.world = new PIXI.Container();
+  this.stage = new PIXI.Container();
+  this.background = new PIXI.Container();
+
+  this.world.addChild(this.background);
+  this.world.addChild(this.stage);
 };
 
 Render$1.prototype.loadResources = function loadResources (resources) {
@@ -80,7 +85,7 @@ Socket.prototype.error = function error (err) {
 };
 
 var Bullet = function Bullet(params) {
-  this.bullet = new PIXI.Sprite(PIXI.loader.resources['bullet'].texture);
+  this.bullet = new PIXI.Sprite.fromFrame('bullet');
   this.bullet.rotation = params.weapon.rotation;
   this.bullet.speed = 5;
   this.bullet.pos = params.pos;
@@ -97,9 +102,7 @@ var Bullet = function Bullet(params) {
 };
 
 var Player = function Player(params) {
-  this.player = new PIXI.Sprite(
-    PIXI.loader.resources[params.value.skin].texture
-  );
+  this.player = new PIXI.Sprite.fromFrame(params.value.skin);
   this.player.pos = params.pos;
   this.player.anchor.x = 0.5;
   this.player.anchor.y = 0.5;
@@ -107,9 +110,7 @@ var Player = function Player(params) {
 };
 
 var Weapon = function Weapon(params) {
-  this.weapon = new PIXI.Sprite(
-    PIXI.loader.resources[params.value.weapon.skin].texture
-  );
+  this.weapon = new PIXI.Sprite.fromFrame(params.value.weapon.skin);
   this.weapon.x = 5;
   this.weapon.y = 5;
   this.weapon.rotation = params.value.weapon.rotation;
@@ -121,8 +122,8 @@ var Gamefield$$1 = function Gamefield$$1(stage, background) {
   this.resources = new Map();
   this.player = null;
   this.stage = stage;
-  this.actions = new Actions(stage);
   this.background = background;
+  this.actions = new Actions(stage);
 };
 
 Gamefield$$1.prototype.update = function update (data) {
@@ -181,16 +182,16 @@ Gamefield$$1.prototype.findDeletedPlayer = function findDeletedPlayer (data) {
 
 Gamefield$$1.prototype.addBackground = function addBackground (config) {
   var backgroundIMG = new PIXI.Sprite(
-    PIXI.loader.resources[config.bg].texture
+    PIXI.loader.resources['background'].texture
   );
-  backgroundIMG.width = config.width;
-  backgroundIMG.height = config.height;
+  backgroundIMG.width = window.innerWidth;
+  backgroundIMG.height = window.innerHeight;
   this.background.addChild(backgroundIMG);
 };
 
 Gamefield$$1.prototype.addMapObjects = function addMapObjects () {
-  var Bush = new PIXI.Sprite.fromFrame('Bush1');
-  var Bush2 = new PIXI.Sprite.fromFrame('Bush1');
+  var Bush = new PIXI.Sprite.fromFrame('1');
+  var Bush2 = new PIXI.Sprite.fromFrame('2');
   Bush.x = 350;
   Bush.y = 350;
   Bush2.x = 1850;
@@ -199,16 +200,19 @@ Gamefield$$1.prototype.addMapObjects = function addMapObjects () {
   this.stage.addChild(Bush2);
 };
 
-Gamefield$$1.prototype.initialize = function initialize (data, config) {
+Gamefield$$1.prototype.initialize = function initialize (data) {
     var this$1 = this;
 
-  this.player = data.currentPlayer;
-  PIXI.loader.load(function () {
-    this$1.addBackground(config);
-    data.payload.forEach(function (player) {
-      this$1.addPlayer(player);
+  return new Promise(function (resolve) {
+    this$1.player = data.currentPlayer;
+    PIXI.loader.load(function () {
+      this$1.addBackground();
+      data.payload.forEach(function (player) {
+        this$1.addPlayer(player);
+      });
+      this$1.addMapObjects();
+      resolve();
     });
-    this$1.addMapObjects();
   });
 };
 
@@ -237,47 +241,39 @@ Actions.prototype.playerTurn = function playerTurn (playerData, values) {
   }
 };
 
-var resources = [
-  { key: 'worm', src: './images/player/worm.png' },
-  { key: 'cat', src: './images/player/cat.png' },
-  { key: 'gun', src: './images/player/gun.png' },
-  { key: 'bullet', src: './images/player/bullet.png' },
-  { key: 'desertBG', src: './images/worlds/desert/desertBG.png' },
-  { key: 'desertSprites', src: './images/worlds/desert/desertObjects.json' }
-];
 var renderConfig = {
-    width: window.innerWidth,
-    height: window.innerHeight - 10
-  };
+  width: window.innerWidth,
+  height: window.innerHeight - 10
+};
 
 var socketConfig = {
   url: 'ws://localhost:3000'
 };
 
 var socket = new Socket(socketConfig);
-var World = new PIXI.Container();
-var Stage = new PIXI.Container();
-var Background = new PIXI.Container();
+var renderer = new Render$1(renderConfig);
 
-World.addChild(Background);
-World.addChild(Stage);
+var gamefield = new Gamefield$$1(renderer.stage, renderer.background);
 
-
-var gamefield = new Gamefield$$1(Stage, Background);
-var renderer = new Render$1(renderConfig, World);
 var key = renderer.keys.keymap;
-var worldCFG = {
-  bg: 'desertBG',
-  width: renderer.renderer.width,
-  height: renderer.renderer.height
-};
 socket.connection.onmessage = function (data) {
   var response = JSON.parse(data.data);
   switch (response.type) {
     case 'init':
-      renderer.run();
+      var resources = [
+        { key: 'skin', src: response.currentSkin.objects },
+        { key: 'background', src: response.currentMap.background },
+        { key: 'mapObjects', src: response.currentMap.objects },
+        { key: 'tiles', src: response.currentMap.tiles }
+      ];
+
       renderer.loadResources(resources);
-      gamefield.initialize(response, worldCFG);
+      gamefield.initialize(response).then(function () {
+        renderer.run();
+        socket.send({
+          type: 'ready'
+        });
+      });
       break;
     case 'update':
       gamefield.update(response.payload);
@@ -346,8 +342,8 @@ PIXI.ticker.shared.add(function () {
 
   if (currentPlayer) {
     animations(currentPlayer);
-    Stage.pivot.x = currentPlayer.position.x / 3;
-    Stage.pivot.y = currentPlayer.position.y / 3;
+    renderer.stage.pivot.x = currentPlayer.position.x / 3;
+    renderer.stage.pivot.y = currentPlayer.position.y / 3;
   }
 
   gamefield.actions.shots.forEach(function (bullet) {
@@ -364,7 +360,7 @@ PIXI.ticker.shared.add(function () {
       bullet.y > renderConfig.height ||
       bullet.y === 0
     ) {
-      Stage.removeChild(bullet);
+      renderer.stage.removeChild(bullet);
       gamefield.actions.shots.delete(bullet.uuid);
     }
   });

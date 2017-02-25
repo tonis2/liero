@@ -1,6 +1,6 @@
 export default class Bullet {
   constructor(params) {
-    this.bullet = new PIXI.Sprite(PIXI.loader.resources['bullet'].texture);
+    this.bullet = new PIXI.Sprite.fromFrame('bullet');
     this.bullet.rotation = params.weapon.rotation;
     this.bullet.speed = 5;
     this.bullet.pos = params.pos;

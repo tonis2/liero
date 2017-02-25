@@ -5,8 +5,8 @@ export default class Gamefield {
     this.resources = new Map();
     this.player = null;
     this.stage = stage;
-    this.actions = new Actions(stage);
     this.background = background;
+    this.actions = new Actions(stage);
   }
 
   update(data) {
@@ -61,16 +61,16 @@ export default class Gamefield {
 
   addBackground(config) {
     const backgroundIMG = new PIXI.Sprite(
-      PIXI.loader.resources[config.bg].texture
+      PIXI.loader.resources['background'].texture
     );
-    backgroundIMG.width = config.width;
-    backgroundIMG.height = config.height;
+    backgroundIMG.width = window.innerWidth;
+    backgroundIMG.height = window.innerHeight;
     this.background.addChild(backgroundIMG);
   }
 
   addMapObjects() {
-    const Bush = new PIXI.Sprite.fromFrame('Bush1');
-    const Bush2 = new PIXI.Sprite.fromFrame('Bush1');
+    const Bush = new PIXI.Sprite.fromFrame('1');
+    const Bush2 = new PIXI.Sprite.fromFrame('2');
     Bush.x = 350;
     Bush.y = 350;
     Bush2.x = 1850;
@@ -79,14 +79,17 @@ export default class Gamefield {
     this.stage.addChild(Bush2);
   }
 
-  initialize(data, config) {
-    this.player = data.currentPlayer;
-    PIXI.loader.load(() => {
-      this.addBackground(config);
-      data.payload.forEach(player => {
-        this.addPlayer(player);
+  initialize(data) {
+    return new Promise(resolve => {
+      this.player = data.currentPlayer;
+      PIXI.loader.load(() => {
+        this.addBackground();
+        data.payload.forEach(player => {
+          this.addPlayer(player);
+        });
+        this.addMapObjects();
+        resolve();
       });
-      this.addMapObjects();
     });
   }
 }

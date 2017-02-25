@@ -7,8 +7,13 @@ export default class Render {
     this.config = config;
     this.keys = new KeyListener();
     this.run = this.run.bind(this);
-    this.world = world;
     document.body.appendChild(this.renderer.view);
+    this.world = new PIXI.Container();
+    this.stage = new PIXI.Container();
+    this.background = new PIXI.Container();
+
+    this.world.addChild(this.background);
+    this.world.addChild(this.stage);
   }
 
   loadResources(resources) {
