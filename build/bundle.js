@@ -119,7 +119,6 @@ var Weapon = function Weapon(params) {
 };
 
 var Gamefield$$1 = function Gamefield$$1(stage, background) {
-  this.resources = new Map();
   this.player = null;
   this.stage = stage;
   this.background = background;
@@ -130,15 +129,18 @@ Gamefield$$1.prototype.update = function update (data) {
     var this$1 = this;
 
   // Server sends less players, than client has online
-  if (data.length < this.resources.size) {
-    this.findDeletedPlayer(data);
-  }
+  // if (data.length < this.resources.size) {
+  // this.findDeletedPlayer(data);
+  // }
   data.forEach(function (player) {
-    if (!this$1.resources.has(player.key)) {
+    // !this.resources.has(player.key)
+    if (!this$1.getPlayer(player.key)) {
       // Server sends more players, than client has online
       this$1.addPlayer(player);
     } else {
-      var playerData = this$1.resources.get(player.key);
+      var playerData = this$1.stage.children.filter(
+        function (item) { return item.id === player.key; }
+      )[0];
       if (player.value.pos !== playerData.pos) {
         this$1.actions.playerTurn(playerData, player.value);
       }
@@ -154,6 +156,12 @@ Gamefield$$1.prototype.update = function update (data) {
   });
 };
 
+Gamefield$$1.prototype.getPlayer = function getPlayer (player) {
+    if ( player === void 0 ) player = this.player;
+
+  return this.stage.children.filter(function (item) { return item.id === player; })[0];
+};
+
 Gamefield$$1.prototype.addPlayer = function addPlayer (player) {
   var PlayerModel = new PIXI.Container();
   var PlayerWorm = new Player(player);
@@ -163,7 +171,7 @@ Gamefield$$1.prototype.addPlayer = function addPlayer (player) {
   PlayerModel.x = player.value.y;
   PlayerModel.addChild(PlayerWorm);
   PlayerModel.addChild(PlayerWeapon);
-  this.resources.set(player.key, PlayerModel);
+  PlayerModel.id = player.key;
   this.stage.addChild(PlayerModel);
   this.actions.playerTurn(PlayerModel, player.value);
 };
@@ -228,8 +236,8 @@ Actions.prototype.shoot = function shoot (stats) {
   this.stage.addChild(bullet);
 };
 
-Actions.prototype.playerTurn = function playerTurn (playerData, values) {
-  var worm = playerData.children[0], gun = playerData.children[1];
+Actions.prototype.playerTurn = function playerTurn (model, values) {
+  var gun = model.children[1], worm = model.children[0];
   if (values.pos === 'L') {
     worm.scale.x = 1;
     gun.scale.x = 1;
@@ -338,8 +346,7 @@ var animations = function (currentPlayer) {
 };
 
 PIXI.ticker.shared.add(function () {
-  var currentPlayer = gamefield.resources.get(gamefield.player);
-
+  var currentPlayer = gamefield.getPlayer();
   if (currentPlayer) {
     animations(currentPlayer);
     renderer.stage.pivot.x = currentPlayer.position.x / 3;

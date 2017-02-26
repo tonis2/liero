@@ -94,8 +94,7 @@ const animations = currentPlayer => {
 };
 
 PIXI.ticker.shared.add(() => {
-  const currentPlayer = gamefield.resources.get(gamefield.player);
-
+  const currentPlayer = gamefield.getPlayer();
   if (currentPlayer) {
     animations(currentPlayer);
     renderer.stage.pivot.x = currentPlayer.position.x / 3;

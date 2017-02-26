@@ -11,6 +11,7 @@ wss.on('connection', ws => {
   ws.on('close', message => {
     players.remove(currentPlayer);
   });
+
   const startUpdates = () => {
     setInterval(
       () => {

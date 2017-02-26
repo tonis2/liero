@@ -1,8 +1,8 @@
 import { Player, Weapon, Bullet } from '../models';
 import { Actions } from './index';
+
 export default class Gamefield {
   constructor(stage, background) {
-    this.resources = new Map();
     this.player = null;
     this.stage = stage;
     this.background = background;
@@ -11,15 +11,18 @@ export default class Gamefield {
 
   update(data) {
     // Server sends less players, than client has online
-    if (data.length < this.resources.size) {
-      this.findDeletedPlayer(data);
-    }
+    // if (data.length < this.resources.size) {
+    //   this.findDeletedPlayer(data);
+    // }
     data.forEach(player => {
-      if (!this.resources.has(player.key)) {
+      // !this.resources.has(player.key)
+      if (!this.getPlayer(player.key)) {
         // Server sends more players, than client has online
         this.addPlayer(player);
       } else {
-        const playerData = this.resources.get(player.key);
+        const playerData = this.stage.children.filter(
+          item => item.id === player.key
+        )[0];
         if (player.value.pos !== playerData.pos) {
           this.actions.playerTurn(playerData, player.value);
         }
@@ -35,6 +38,10 @@ export default class Gamefield {
     });
   }
 
+  getPlayer(player = this.player) {
+    return this.stage.children.filter(item => item.id === player)[0];
+  }
+
   addPlayer(player) {
     const PlayerModel = new PIXI.Container();
     const PlayerWorm = new Player(player);
@@ -44,7 +51,7 @@ export default class Gamefield {
     PlayerModel.x = player.value.y;
     PlayerModel.addChild(PlayerWorm);
     PlayerModel.addChild(PlayerWeapon);
-    this.resources.set(player.key, PlayerModel);
+    PlayerModel.id = player.key;
     this.stage.addChild(PlayerModel);
     this.actions.playerTurn(PlayerModel, player.value);
   }

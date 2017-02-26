@@ -13,8 +13,8 @@ export default class Actions {
     this.stage.addChild(bullet);
   }
 
-  playerTurn(playerData, values) {
-    const worm = playerData.children[0], gun = playerData.children[1];
+  playerTurn(model, values) {
+    const gun = model.children[1], worm = model.children[0];
     if (values.pos === 'L') {
       worm.scale.x = 1;
       gun.scale.x = 1;
