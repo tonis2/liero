@@ -1,5 +1,6 @@
 import { Player, Weapon, Bullet } from '../models';
 import { Actions } from './index';
+import { load } from '../helpers/loadMapModel';
 
 export default class Gamefield {
   constructor(stage, background) {
@@ -10,10 +11,6 @@ export default class Gamefield {
   }
 
   update(data) {
-    // Server sends less players, than client has online
-    // if (data.length < this.resources.size) {
-    //   this.findDeletedPlayer(data);
-    // }
     data.forEach(player => {
       // !this.resources.has(player.key)
       if (!this.getPlayer(player.key)) {
@@ -56,14 +53,9 @@ export default class Gamefield {
     this.actions.playerTurn(PlayerModel, player.value);
   }
 
-  findDeletedPlayer(data) {
-    this.resources.forEach((value, key) => {
-      const playerOnline = data.filter(player => player.key === key);
-      if (playerOnline.length === 0) {
-        this.stage.removeChild(value);
-        this.resources.delete(key);
-      }
-    });
+  findDeletedPlayer(id) {
+    const leftPlayer = this.getPlayer(id);
+    this.stage.removeChild(leftPlayer);
   }
 
   addBackground(config) {
@@ -95,6 +87,7 @@ export default class Gamefield {
           this.addPlayer(player);
         });
         this.addMapObjects();
+        load(data.currentMap, this.stage);
         resolve();
       });
     });

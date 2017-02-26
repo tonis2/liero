@@ -22,7 +22,8 @@ socket.connection.onmessage = data => {
         { key: 'mapObjects', src: response.currentMap.objects },
         { key: 'tiles', src: response.currentMap.tiles }
       ];
-
+      renderer.stage.width = response.width;
+      renderer.stage.height = response.height;
       renderer.loadResources(resources);
       gamefield.initialize(response).then(() => {
         renderer.run();
@@ -33,6 +34,9 @@ socket.connection.onmessage = data => {
       break;
     case 'update':
       gamefield.update(response.payload);
+      break;
+    case 'disconnect':
+      gamefield.findDeletedPlayer(response.payload);
       break;
   }
 };
@@ -110,9 +114,9 @@ PIXI.ticker.shared.add(() => {
       bullet.y -= Math.sin(bullet.rotation) * bullet.speed;
     }
     if (
-      bullet.x > renderConfig.width ||
+      bullet.x > renderer.stage.width ||
       bullet.x === 0 ||
-      bullet.y > renderConfig.height ||
+      bullet.y > renderer.stage.height ||
       bullet.y === 0
     ) {
       renderer.stage.removeChild(bullet);

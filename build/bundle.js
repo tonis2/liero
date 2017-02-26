@@ -118,6 +118,32 @@ var Weapon = function Weapon(params) {
   return this.weapon;
 };
 
+var load = function (data, stage) {
+  var row = 0;
+  var colHeight = data.height / data.tilesGrid;
+  var colWidth = data.width / data.tilesWidth;
+  var groundLevel = window.innerHeight;
+  data.tilesMap.forEach(function (col, index) {
+    if (index % data.tilesWidth === 0) {
+      row += 1;
+    }
+
+    if (col !== 0) {
+      var Sprite = new PIXI.Sprite.fromFrame(("" + col));
+      var indexString = index.toString();
+      var rowfromLeft = indexString.substring(
+        indexString.length - 1,
+        indexString.length
+      );
+      Sprite.width = colWidth / 2;
+      Sprite.height = colHeight / 2;
+      Sprite.y = (groundLevel - row * colHeight) / 4;
+      Sprite.x = (0 + rowfromLeft * colWidth) / 2;
+      stage.addChild(Sprite);
+    }
+  });
+};
+
 var Gamefield$$1 = function Gamefield$$1(stage, background) {
   this.player = null;
   this.stage = stage;
@@ -128,10 +154,6 @@ var Gamefield$$1 = function Gamefield$$1(stage, background) {
 Gamefield$$1.prototype.update = function update (data) {
     var this$1 = this;
 
-  // Server sends less players, than client has online
-  // if (data.length < this.resources.size) {
-  // this.findDeletedPlayer(data);
-  // }
   data.forEach(function (player) {
     // !this.resources.has(player.key)
     if (!this$1.getPlayer(player.key)) {
@@ -176,16 +198,9 @@ Gamefield$$1.prototype.addPlayer = function addPlayer (player) {
   this.actions.playerTurn(PlayerModel, player.value);
 };
 
-Gamefield$$1.prototype.findDeletedPlayer = function findDeletedPlayer (data) {
-    var this$1 = this;
-
-  this.resources.forEach(function (value, key) {
-    var playerOnline = data.filter(function (player) { return player.key === key; });
-    if (playerOnline.length === 0) {
-      this$1.stage.removeChild(value);
-      this$1.resources.delete(key);
-    }
-  });
+Gamefield$$1.prototype.findDeletedPlayer = function findDeletedPlayer (id) {
+  var leftPlayer = this.getPlayer(id);
+  this.stage.removeChild(leftPlayer);
 };
 
 Gamefield$$1.prototype.addBackground = function addBackground (config) {
@@ -219,6 +234,7 @@ Gamefield$$1.prototype.initialize = function initialize (data) {
         this$1.addPlayer(player);
       });
       this$1.addMapObjects();
+      load(data.currentMap, this$1.stage);
       resolve();
     });
   });
@@ -274,7 +290,8 @@ socket.connection.onmessage = function (data) {
         { key: 'mapObjects', src: response.currentMap.objects },
         { key: 'tiles', src: response.currentMap.tiles }
       ];
-
+      renderer.stage.width = response.width;
+      renderer.stage.height = response.height;
       renderer.loadResources(resources);
       gamefield.initialize(response).then(function () {
         renderer.run();
@@ -285,6 +302,9 @@ socket.connection.onmessage = function (data) {
       break;
     case 'update':
       gamefield.update(response.payload);
+      break;
+    case 'disconnect':
+      gamefield.findDeletedPlayer(response.payload);
       break;
   }
 };
@@ -362,9 +382,9 @@ PIXI.ticker.shared.add(function () {
       bullet.y -= Math.sin(bullet.rotation) * bullet.speed;
     }
     if (
-      bullet.x > renderConfig.width ||
+      bullet.x > renderer.stage.width ||
       bullet.x === 0 ||
-      bullet.y > renderConfig.height ||
+      bullet.y > renderer.stage.height ||
       bullet.y === 0
     ) {
       renderer.stage.removeChild(bullet);

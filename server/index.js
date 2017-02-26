@@ -5,13 +5,24 @@ const wss = new WebSocketServer({ port: 3000 });
 const players = new Players();
 const map = require('./maps/maps.json');
 const skin = require('./skins/player.json');
+const wsList = new Map();
 
 wss.on('connection', ws => {
   const currentPlayer = players.createPlayer();
+  wsList.set(currentPlayer, ws);
+
+  //When player leaves send message to others to delete
   ws.on('close', message => {
     players.remove(currentPlayer);
+    wsList.delete(currentPlayer);
+    wsList.forEach(socket => {
+      socket.send(
+        JSON.stringify({ type: 'disconnect', payload: currentPlayer })
+      );
+    });
   });
 
+  //Constantly send updates about player movements
   const startUpdates = () => {
     setInterval(
       () => {
