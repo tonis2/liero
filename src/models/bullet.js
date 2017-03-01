@@ -3,6 +3,9 @@ export default class Bullet {
     this.bullet = new PIXI.Sprite.fromFrame('bullet');
     this.bullet.rotation = params.weapon.rotation;
     this.bullet.speed = 5;
+    this.bullet.delay = 300;
+    this.bullet.ammo = 60;
+    this.bullet.reload = 2000;
     this.bullet.pos = params.pos;
     if (params.pos === 'L') {
       this.bullet.scale.x = -1;

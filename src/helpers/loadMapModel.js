@@ -3,23 +3,28 @@ export const load = (data, stage) => {
   const colHeight = data.height / data.tilesGrid;
   const colWidth = data.width / data.tilesWidth;
   const groundLevel = window.innerHeight;
-  data.tilesMap.forEach((col, index) => {
-    if (index % data.tilesWidth === 0) {
-      row += 1;
-    }
 
-    if (col !== 0) {
-      const Sprite = new PIXI.Sprite.fromFrame(`${col}`);
-      const indexString = index.toString();
-      const rowfromLeft = indexString.substring(
-        indexString.length - 1,
-        indexString.length
-      );
-      Sprite.width = colWidth / 2;
-      Sprite.height = colHeight / 2;
-      Sprite.y = (groundLevel - row * colHeight) / 4;
-      Sprite.x = (0 + rowfromLeft * colWidth) / 2;
-      stage.addChild(Sprite);
+  data.tilesMap.forEach((item, index) => {
+    if (item.x.from !== item.x.to) {
+      const Sprite = new PIXI.Sprite.fromFrame(`${item.tile}`);
+      const SpriteCount = Math.floor((item.x.to - item.x.from) / Sprite.width );
+      for (let i = 0; i < SpriteCount; i++) {
+          const newSprite =  new PIXI.Sprite.fromFrame(`${item.tile}`);
+          newSprite.y = 800;
+          newSprite.x = item.x.from + (Sprite.width * i);
+          stage.addChild(newSprite);
+      }
     }
+    // if (col !== 0) {a
+    //
+    //   const indexString = index.toString();
+    //   const rowfromLeft = indexString.substring(
+    //     indexString.length - 1,
+    //     indexString.length
+    //   );
+
+    //   Sprite.zOrder = 5;
+    //
+    // }
   });
 };

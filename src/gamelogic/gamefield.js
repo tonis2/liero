@@ -17,9 +17,7 @@ export default class Gamefield {
         // Server sends more players, than client has online
         this.addPlayer(player);
       } else {
-        const playerData = this.stage.children.filter(
-          item => item.id === player.key
-        )[0];
+        const playerData = this.getPlayer(player.key);
         if (player.value.pos !== playerData.pos) {
           this.actions.playerTurn(playerData, player.value);
         }
@@ -30,7 +28,7 @@ export default class Gamefield {
         playerData.children[1].rotation = player.value.weapon.rotation;
       }
       if (player.value.shot) {
-        this.actions.shoot(JSON.parse(player.value.shot));
+        this.actions.shoot(player.value.shot);
       }
     });
   }

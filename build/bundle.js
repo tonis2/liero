@@ -88,6 +88,9 @@ var Bullet = function Bullet(params) {
   this.bullet = new PIXI.Sprite.fromFrame('bullet');
   this.bullet.rotation = params.weapon.rotation;
   this.bullet.speed = 5;
+  this.bullet.delay = 300;
+  this.bullet.ammo = 60;
+  this.bullet.reload = 2000;
   this.bullet.pos = params.pos;
   if (params.pos === 'L') {
     this.bullet.scale.x = -1;
@@ -123,24 +126,29 @@ var load = function (data, stage) {
   var colHeight = data.height / data.tilesGrid;
   var colWidth = data.width / data.tilesWidth;
   var groundLevel = window.innerHeight;
-  data.tilesMap.forEach(function (col, index) {
-    if (index % data.tilesWidth === 0) {
-      row += 1;
-    }
 
-    if (col !== 0) {
-      var Sprite = new PIXI.Sprite.fromFrame(("" + col));
-      var indexString = index.toString();
-      var rowfromLeft = indexString.substring(
-        indexString.length - 1,
-        indexString.length
-      );
-      Sprite.width = colWidth / 2;
-      Sprite.height = colHeight / 2;
-      Sprite.y = (groundLevel - row * colHeight) / 4;
-      Sprite.x = (0 + rowfromLeft * colWidth) / 2;
-      stage.addChild(Sprite);
+  data.tilesMap.forEach(function (item, index) {
+    if (item.x.from !== item.x.to) {
+      var Sprite = new PIXI.Sprite.fromFrame(("" + (item.tile)));
+      var SpriteCount = Math.floor((item.x.to - item.x.from) / Sprite.width );
+      for (var i = 0; i < SpriteCount; i++) {
+          var newSprite =  new PIXI.Sprite.fromFrame(("" + (item.tile)));
+          newSprite.y = 800;
+          newSprite.x = item.x.from + (Sprite.width * i);
+          stage.addChild(newSprite);
+      }
     }
+    // if (col !== 0) {a
+    //
+    //   const indexString = index.toString();
+    //   const rowfromLeft = indexString.substring(
+    //     indexString.length - 1,
+    //     indexString.length
+    //   );
+
+    //   Sprite.zOrder = 5;
+    //
+    // }
   });
 };
 
@@ -160,9 +168,7 @@ Gamefield$$1.prototype.update = function update (data) {
       // Server sends more players, than client has online
       this$1.addPlayer(player);
     } else {
-      var playerData = this$1.stage.children.filter(
-        function (item) { return item.id === player.key; }
-      )[0];
+      var playerData = this$1.getPlayer(player.key);
       if (player.value.pos !== playerData.pos) {
         this$1.actions.playerTurn(playerData, player.value);
       }
@@ -173,7 +179,7 @@ Gamefield$$1.prototype.update = function update (data) {
       playerData.children[1].rotation = player.value.weapon.rotation;
     }
     if (player.value.shot) {
-      this$1.actions.shoot(JSON.parse(player.value.shot));
+      this$1.actions.shoot(player.value.shot);
     }
   });
 };
