@@ -8,14 +8,15 @@ export const load = (data, stage) => {
     if (item.x.from !== item.x.to) {
       const Sprite = new PIXI.Sprite.fromFrame(`${item.tile}`);
       const SpriteCount = Math.floor((item.x.to - item.x.from) / Sprite.width );
+
       for (let i = 0; i < SpriteCount; i++) {
           const newSprite =  new PIXI.Sprite.fromFrame(`${item.tile}`);
-          newSprite.y = 800;
-          newSprite.x = item.x.from + (Sprite.width * i);
+          newSprite.y = 850;
+          newSprite.x = item.x.from + (Sprite.width  * i  -3);
           stage.addChild(newSprite);
       }
     }
-    // if (col !== 0) {a
+    // if (col !== 0) {
     //
     //   const indexString = index.toString();
     //   const rowfromLeft = indexString.substring(

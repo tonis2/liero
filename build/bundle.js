@@ -44,13 +44,36 @@ var Render$1 = function Render(config, world) {
   this.config = config;
   this.keys = new ListenKeys();
   this.run = this.run.bind(this);
-  document.body.appendChild(this.renderer.view);
+
   this.world = new PIXI.Container();
   this.stage = new PIXI.Container();
   this.background = new PIXI.Container();
-
+  this.physicsWorld = new p2.World();
   this.world.addChild(this.background);
   this.world.addChild(this.stage);
+
+  document.body.appendChild(this.renderer.view);
+  this.loadPhysics();
+};
+
+Render$1.prototype.loadPhysics = function loadPhysics () {
+  // Add a box
+  var boxShape = new p2.Box({ width: 2, height: 1 }),
+  boxBody = new p2.Body({
+    mass: 1,
+    position: [0, 2],
+    angularVelocity: 1
+  });
+  boxBody.addShape(boxShape);
+  boxBody.id = '1223';
+  this.physicsWorld.addBody(boxBody);
+  // Add a plane
+  var planeShape = new p2.Plane(),
+        planeBody = new p2.Body({ position: [0, -1] });
+        planeBody.addShape(planeShape);
+        planeBody.id = '1234214';
+  this.physicsWorld.addBody(planeBody);
+  console.log(this.physicsWorld.bodies);
 };
 
 Render$1.prototype.loadResources = function loadResources (resources) {
@@ -59,8 +82,10 @@ Render$1.prototype.loadResources = function loadResources (resources) {
   });
 };
 
-Render$1.prototype.run = function run () {
+Render$1.prototype.run = function run (t) {
+  t = t || 0;
   requestAnimationFrame(this.run);
+  this.physicsWorld.step(1/60);
   this.renderer.render(this.world);
 };
 
@@ -131,14 +156,15 @@ var load = function (data, stage) {
     if (item.x.from !== item.x.to) {
       var Sprite = new PIXI.Sprite.fromFrame(("" + (item.tile)));
       var SpriteCount = Math.floor((item.x.to - item.x.from) / Sprite.width );
+
       for (var i = 0; i < SpriteCount; i++) {
           var newSprite =  new PIXI.Sprite.fromFrame(("" + (item.tile)));
-          newSprite.y = 800;
-          newSprite.x = item.x.from + (Sprite.width * i);
+          newSprite.y = 850;
+          newSprite.x = item.x.from + (Sprite.width  * i  -3);
           stage.addChild(newSprite);
       }
     }
-    // if (col !== 0) {a
+    // if (col !== 0) {
     //
     //   const indexString = index.toString();
     //   const rowfromLeft = indexString.substring(
@@ -218,29 +244,17 @@ Gamefield$$1.prototype.addBackground = function addBackground (config) {
   this.background.addChild(backgroundIMG);
 };
 
-Gamefield$$1.prototype.addMapObjects = function addMapObjects () {
-  var Bush = new PIXI.Sprite.fromFrame('1');
-  var Bush2 = new PIXI.Sprite.fromFrame('2');
-  Bush.x = 350;
-  Bush.y = 350;
-  Bush2.x = 1850;
-  Bush2.y = 350;
-  this.stage.addChild(Bush);
-  this.stage.addChild(Bush2);
-};
-
 Gamefield$$1.prototype.initialize = function initialize (data) {
     var this$1 = this;
 
   return new Promise(function (resolve) {
     this$1.player = data.currentPlayer;
     PIXI.loader.load(function () {
+      load(data.currentMap, this$1.stage);
       this$1.addBackground();
       data.payload.forEach(function (player) {
         this$1.addPlayer(player);
       });
-      this$1.addMapObjects();
-      load(data.currentMap, this$1.stage);
       resolve();
     });
   });

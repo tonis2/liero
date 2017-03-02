@@ -65,27 +65,15 @@ export default class Gamefield {
     this.background.addChild(backgroundIMG);
   }
 
-  addMapObjects() {
-    const Bush = new PIXI.Sprite.fromFrame('1');
-    const Bush2 = new PIXI.Sprite.fromFrame('2');
-    Bush.x = 350;
-    Bush.y = 350;
-    Bush2.x = 1850;
-    Bush2.y = 350;
-    this.stage.addChild(Bush);
-    this.stage.addChild(Bush2);
-  }
-
   initialize(data) {
     return new Promise(resolve => {
       this.player = data.currentPlayer;
       PIXI.loader.load(() => {
+        load(data.currentMap, this.stage);
         this.addBackground();
         data.payload.forEach(player => {
           this.addPlayer(player);
         });
-        this.addMapObjects();
-        load(data.currentMap, this.stage);
         resolve();
       });
     });
