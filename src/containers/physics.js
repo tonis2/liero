@@ -15,7 +15,6 @@ export default class Physics {
       mass: 3,
       position: [player.value.x, player.value.y]
     });
-
     polygonBody.id = player.key;
     polygonBody.fromPolygon(this.polygons.get('worm'));
     this.addModel(polygonBody);

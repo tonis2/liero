@@ -1,5 +1,5 @@
-import { Actions } from './index';
-import { loadModels } from '../helpers/loadMapModel';
+import { Actions } from "./index";
+import { loadModels } from "../helpers/loadMapModel";
 
 export default class Gamefield {
   constructor(renderer, physics) {
@@ -16,33 +16,36 @@ export default class Gamefield {
         // Server sends more players, than client has online
         this.addPlayer(player);
       } else {
+        //Player has turned
         if (player.value.pos !== playerData.pos) {
           this.actions.playerTurn(playerData, player.value);
         }
         //update renderer stats based on server values
-        playerData.pos = player.value.pos;
         this.physics.updatePosition(player);
+        playerData.pos = player.value.pos;
         playerData.children[1].rotation = player.value.weapon.rotation;
       }
       if (player.value.shot) {
-        this.actions.shoot(player.value.shot);
+        this.actions.shoot(JSON.parse(player.value.shot));
       }
     });
   }
 
   addPlayer(player) {
-    this.renderer.addPlayer(player);
     this.physics.addPlayer(player);
+    this.renderer.addPlayer(player);
+    // const playerData = this.renderer.getPlayer(this.player);
+    // this.actions.playerTurn(playerData, player.value);
   }
 
   initialize(data) {
     return new Promise(resolve => {
       this.player = data.currentPlayer;
       PIXI.loader.load(() => {
-        this.renderer.addBackground();
         data.payload.forEach(player => {
           this.addPlayer(player);
         });
+        this.renderer.addBackground();
         loadModels(data.currentMap, this.renderer.stage, this.physics);
         this.renderer.run();
         resolve();

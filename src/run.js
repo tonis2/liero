@@ -38,7 +38,7 @@ socket.connection.onmessage = data => {
       gamefield.update(response.payload);
       break;
     case 'disconnect':
-      gamefield.findDeletedPlayer(response.payload);
+      renderer.findDeletedPlayer(response.payload);
       break;
   }
 };
@@ -121,9 +121,9 @@ PIXI.ticker.shared.add(() => {
       bullet.y -= Math.sin(bullet.rotation) * bullet.speed;
     }
     if (
-      bullet.x > renderer.stage.width ||
+      bullet.x > 800 ||
       bullet.x === 0 ||
-      bullet.y > renderer.stage.height ||
+      bullet.y > 800 ||
       bullet.y === 0
     ) {
       renderer.stage.removeChild(bullet);

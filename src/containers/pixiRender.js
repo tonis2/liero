@@ -35,6 +35,7 @@ export default class Render {
     PlayerModel.addChild(PlayerWorm);
     PlayerModel.addChild(PlayerWeapon);
     PlayerModel.id = player.key;
+    PlayerModel.zOrder = 5;
     this.stage.addChild(PlayerModel);
   }
 

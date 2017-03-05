@@ -130,6 +130,7 @@ Render$1.prototype.addPlayer = function addPlayer (player) {
   PlayerModel.addChild(PlayerWorm);
   PlayerModel.addChild(PlayerWeapon);
   PlayerModel.id = player.key;
+  PlayerModel.zOrder = 5;
   this.stage.addChild(PlayerModel);
 };
 
@@ -169,7 +170,6 @@ Physics.prototype.addPlayer = function addPlayer (player) {
     mass: 3,
     position: [player.value.x, player.value.y]
   });
-
   polygonBody.id = player.key;
   polygonBody.fromPolygon(this.polygons.get('worm'));
   this.addModel(polygonBody);
@@ -238,23 +238,26 @@ Gamefield$$1.prototype.update = function update (data) {
       // Server sends more players, than client has online
       this$1.addPlayer(player);
     } else {
+      //Player has turned
       if (player.value.pos !== playerData.pos) {
         this$1.actions.playerTurn(playerData, player.value);
       }
       //update renderer stats based on server values
-      playerData.pos = player.value.pos;
       this$1.physics.updatePosition(player);
+      playerData.pos = player.value.pos;
       playerData.children[1].rotation = player.value.weapon.rotation;
     }
     if (player.value.shot) {
-      this$1.actions.shoot(player.value.shot);
+      this$1.actions.shoot(JSON.parse(player.value.shot));
     }
   });
 };
 
 Gamefield$$1.prototype.addPlayer = function addPlayer (player) {
-  this.renderer.addPlayer(player);
   this.physics.addPlayer(player);
+  this.renderer.addPlayer(player);
+  // const playerData = this.renderer.getPlayer(this.player);
+  // this.actions.playerTurn(playerData, player.value);
 };
 
 Gamefield$$1.prototype.initialize = function initialize (data) {
@@ -263,10 +266,10 @@ Gamefield$$1.prototype.initialize = function initialize (data) {
   return new Promise(function (resolve) {
     this$1.player = data.currentPlayer;
     PIXI.loader.load(function () {
-      this$1.renderer.addBackground();
       data.payload.forEach(function (player) {
         this$1.addPlayer(player);
       });
+      this$1.renderer.addBackground();
       loadModels(data.currentMap, this$1.renderer.stage, this$1.physics);
       this$1.renderer.run();
       resolve();
@@ -340,7 +343,7 @@ socket.connection.onmessage = function (data) {
       gamefield.update(response.payload);
       break;
     case 'disconnect':
-      gamefield.findDeletedPlayer(response.payload);
+      renderer.findDeletedPlayer(response.payload);
       break;
   }
 };
@@ -423,9 +426,9 @@ PIXI.ticker.shared.add(function () {
       bullet.y -= Math.sin(bullet.rotation) * bullet.speed;
     }
     if (
-      bullet.x > renderer.stage.width ||
+      bullet.x > 800 ||
       bullet.x === 0 ||
-      bullet.y > renderer.stage.height ||
+      bullet.y > 800 ||
       bullet.y === 0
     ) {
       renderer.stage.removeChild(bullet);
