@@ -1,5 +1,5 @@
-import Renderer from './renderer';
 import Socket from './sockets';
+import { Renderer, Physics } from './containers';
 import { Gamefield } from './gamelogic';
 import { renderConfig } from './helpers/configs';
 const socketConfig = {
@@ -8,10 +8,11 @@ const socketConfig = {
 
 const socket = new Socket(socketConfig);
 const renderer = new Renderer(renderConfig);
+const physics = new Physics();
 
-const gamefield = new Gamefield(renderer.stage, renderer.background);
-
+const gamefield = new Gamefield(renderer, physics);
 const key = renderer.keys.keymap;
+
 socket.connection.onmessage = data => {
   const response = JSON.parse(data.data);
   switch (response.type) {
@@ -22,11 +23,12 @@ socket.connection.onmessage = data => {
         { key: 'mapObjects', src: response.currentMap.objects },
         { key: 'tiles', src: response.currentMap.tiles }
       ];
+      physics.setPolygon('worm', response.currentSkin.polygon);
       renderer.stage.width = response.width;
       renderer.stage.height = response.height;
       renderer.loadResources(resources);
+
       gamefield.initialize(response).then(() => {
-        renderer.run();
         socket.send({
           type: 'ready'
         });
@@ -54,11 +56,12 @@ const animations = currentPlayer => {
   };
 
   renderer.keys.on(key.W, () => {
-    stats.y -= 3;
-  });
-
-  renderer.keys.on(key.S, () => {
-    stats.y += 3;
+    stats.y -= 10;
+    if (stats.pos === 'R') {
+      stats.x += 6;
+    } else {
+      stats.x -= 6;
+    }
   });
 
   renderer.keys.on(key.A, () => {
@@ -98,11 +101,15 @@ const animations = currentPlayer => {
 };
 
 PIXI.ticker.shared.add(() => {
-  const currentPlayer = gamefield.getPlayer();
-  if (currentPlayer) {
-    animations(currentPlayer);
-    renderer.stage.pivot.x = currentPlayer.position.x / 3;
-    renderer.stage.pivot.y = currentPlayer.position.y / 3;
+  const pixiPlayer = renderer.getPlayer(gamefield.player),
+    physicsPlayer = physics.getModel(gamefield.player);
+  physics.container.step(1 / 5);
+  if (pixiPlayer) {
+    pixiPlayer.position.x = physicsPlayer.position[0];
+    pixiPlayer.position.y = physicsPlayer.position[1];
+    animations(pixiPlayer);
+    renderer.stage.pivot.x = pixiPlayer.position.x / 3;
+    renderer.stage.pivot.y = pixiPlayer.position.y / 5;
   }
 
   gamefield.actions.shots.forEach(bullet => {

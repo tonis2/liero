@@ -1,6 +1,26 @@
 (function () {
 'use strict';
 
+var Socket = function Socket(config) {
+  var this$1 = this;
+
+  this.connection = new WebSocket(config.url);
+  this.connection.onopen = function (msg) {
+    console.log('Socket ready');
+    this$1.ready = true;
+  };
+  this.connection.onerror = this.error.bind(this);
+  this.ready = false;
+};
+
+Socket.prototype.send = function send (message) {
+  this.connection.send(JSON.stringify(message));
+};
+
+Socket.prototype.error = function error (err) {
+  console.log(err);
+};
+
 var keys = {
   W: 87,
   S: 83,
@@ -36,77 +56,6 @@ ListenKeys.prototype.listenKeys = function listenKeys (keys$$1) {
 
   window.onkeydown = keysPressed;
   window.onkeyup = keysReleased;
-};
-
-var Render$1 = function Render(config, world) {
-  this.renderer = new PIXI.WebGLRenderer(config.width, config.height);
-  this.renderer.backgroundColor = 0x061639;
-  this.config = config;
-  this.keys = new ListenKeys();
-  this.run = this.run.bind(this);
-
-  this.world = new PIXI.Container();
-  this.stage = new PIXI.Container();
-  this.background = new PIXI.Container();
-  this.physicsWorld = new p2.World();
-  this.world.addChild(this.background);
-  this.world.addChild(this.stage);
-
-  document.body.appendChild(this.renderer.view);
-  this.loadPhysics();
-};
-
-Render$1.prototype.loadPhysics = function loadPhysics () {
-  // Add a box
-  var boxShape = new p2.Box({ width: 2, height: 1 }),
-  boxBody = new p2.Body({
-    mass: 1,
-    position: [0, 2],
-    angularVelocity: 1
-  });
-  boxBody.addShape(boxShape);
-  boxBody.id = '1223';
-  this.physicsWorld.addBody(boxBody);
-  // Add a plane
-  var planeShape = new p2.Plane(),
-        planeBody = new p2.Body({ position: [0, -1] });
-        planeBody.addShape(planeShape);
-        planeBody.id = '1234214';
-  this.physicsWorld.addBody(planeBody);
-  console.log(this.physicsWorld.bodies);
-};
-
-Render$1.prototype.loadResources = function loadResources (resources) {
-  resources.forEach(function (resource) {
-    PIXI.loader.add(resource.key, resource.src);
-  });
-};
-
-Render$1.prototype.run = function run (t) {
-  t = t || 0;
-  requestAnimationFrame(this.run);
-  this.physicsWorld.step(1/60);
-  this.renderer.render(this.world);
-};
-
-var Socket = function Socket(config) {
-  var this$1 = this;
-
-  this.connection = new WebSocket(config.url);
-  this.connection.onopen = function (msg) {
-    console.log('Socket ready');
-    this$1.ready = true;
-  };
-  this.connection.onerror = this.error.bind(this);
-  this.ready = false;
-};
-
-Socket.prototype.send = function send (message) {
-  this.connection.send(JSON.stringify(message));
-};
-
-Socket.prototype.error = function error (err) {
-  console.log(err);
 };
 
 var Bullet = function Bullet(params) {
@@ -146,77 +95,32 @@ var Weapon = function Weapon(params) {
   return this.weapon;
 };
 
-var load = function (data, stage) {
-  var row = 0;
-  var colHeight = data.height / data.tilesGrid;
-  var colWidth = data.width / data.tilesWidth;
-  var groundLevel = window.innerHeight;
-
-  data.tilesMap.forEach(function (item, index) {
-    if (item.x.from !== item.x.to) {
-      var Sprite = new PIXI.Sprite.fromFrame(("" + (item.tile)));
-      var SpriteCount = Math.floor((item.x.to - item.x.from) / Sprite.width );
-
-      for (var i = 0; i < SpriteCount; i++) {
-          var newSprite =  new PIXI.Sprite.fromFrame(("" + (item.tile)));
-          newSprite.y = 850;
-          newSprite.x = item.x.from + (Sprite.width  * i  -3);
-          stage.addChild(newSprite);
-      }
-    }
-    // if (col !== 0) {
-    //
-    //   const indexString = index.toString();
-    //   const rowfromLeft = indexString.substring(
-    //     indexString.length - 1,
-    //     indexString.length
-    //   );
-
-    //   Sprite.zOrder = 5;
-    //
-    // }
-  });
+var Render$1 = function Render(config) {
+  this.renderer = new PIXI.WebGLRenderer(config.width, config.height);
+  this.renderer.backgroundColor = 0x061639;
+  this.config = config;
+  this.keys = new ListenKeys();
+  this.run = this.run.bind(this);
+  this.world = new PIXI.Container();
+  this.stage = new PIXI.Container();
+  this.background = new PIXI.Container();
+  this.world.addChild(this.background);
+  this.world.addChild(this.stage);
+  document.body.appendChild(this.renderer.view);
 };
 
-var Gamefield$$1 = function Gamefield$$1(stage, background) {
-  this.player = null;
-  this.stage = stage;
-  this.background = background;
-  this.actions = new Actions(stage);
-};
-
-Gamefield$$1.prototype.update = function update (data) {
-    var this$1 = this;
-
-  data.forEach(function (player) {
-    // !this.resources.has(player.key)
-    if (!this$1.getPlayer(player.key)) {
-      // Server sends more players, than client has online
-      this$1.addPlayer(player);
-    } else {
-      var playerData = this$1.getPlayer(player.key);
-      if (player.value.pos !== playerData.pos) {
-        this$1.actions.playerTurn(playerData, player.value);
-      }
-      //update renderer stats based on server values
-      playerData.pos = player.value.pos;
-      playerData.x = player.value.x;
-      playerData.y = player.value.y;
-      playerData.children[1].rotation = player.value.weapon.rotation;
-    }
-    if (player.value.shot) {
-      this$1.actions.shoot(player.value.shot);
-    }
-  });
-};
-
-Gamefield$$1.prototype.getPlayer = function getPlayer (player) {
+Render$1.prototype.getPlayer = function getPlayer (player) {
     if ( player === void 0 ) player = this.player;
 
   return this.stage.children.filter(function (item) { return item.id === player; })[0];
 };
 
-Gamefield$$1.prototype.addPlayer = function addPlayer (player) {
+Render$1.prototype.findDeletedPlayer = function findDeletedPlayer (id) {
+  var leftPlayer = this.getPlayer(id);
+  this.stage.removeChild(leftPlayer);
+};
+
+Render$1.prototype.addPlayer = function addPlayer (player) {
   var PlayerModel = new PIXI.Container();
   var PlayerWorm = new Player(player);
   var PlayerWeapon = new Weapon(player);
@@ -227,15 +131,9 @@ Gamefield$$1.prototype.addPlayer = function addPlayer (player) {
   PlayerModel.addChild(PlayerWeapon);
   PlayerModel.id = player.key;
   this.stage.addChild(PlayerModel);
-  this.actions.playerTurn(PlayerModel, player.value);
 };
 
-Gamefield$$1.prototype.findDeletedPlayer = function findDeletedPlayer (id) {
-  var leftPlayer = this.getPlayer(id);
-  this.stage.removeChild(leftPlayer);
-};
-
-Gamefield$$1.prototype.addBackground = function addBackground (config) {
+Render$1.prototype.addBackground = function addBackground (config) {
   var backgroundIMG = new PIXI.Sprite(
     PIXI.loader.resources['background'].texture
   );
@@ -244,17 +142,133 @@ Gamefield$$1.prototype.addBackground = function addBackground (config) {
   this.background.addChild(backgroundIMG);
 };
 
+Render$1.prototype.loadResources = function loadResources (resources) {
+  resources.forEach(function (resource) {
+    PIXI.loader.add(resource.key, resource.src);
+  });
+};
+
+Render$1.prototype.run = function run () {
+  requestAnimationFrame(this.run);
+  this.renderer.render(this.world);
+};
+
+var Physics = function Physics() {
+  this.container = new p2.World({
+    gravity: [0, 5.82]
+  });
+  this.polygons = new Map();
+};
+
+Physics.prototype.addModel = function addModel (model) {
+  this.container.addBody(model);
+};
+
+Physics.prototype.addPlayer = function addPlayer (player) {
+  var polygonBody = new p2.Body({
+    mass: 3,
+    position: [player.value.x, player.value.y]
+  });
+
+  polygonBody.id = player.key;
+  polygonBody.fromPolygon(this.polygons.get('worm'));
+  this.addModel(polygonBody);
+};
+
+Physics.prototype.updatePosition = function updatePosition (player) {
+  var currentPlayer = this.getModel(player.key);
+  currentPlayer.position[0] = player.value.x;
+  currentPlayer.position[1] = player.value.y;
+  currentPlayer.angle = player.value.rotation;
+};
+
+Physics.prototype.setPolygon = function setPolygon (id, polygon) {
+  this.polygons.set(id, polygon);
+};
+
+Physics.prototype.getModel = function getModel (id) {
+  return this.container.bodies.filter(function (item) { return item.id === id; })[0];
+};
+
+var loadModels = function (data, stage, physics) {
+  var row = 0;
+  var colHeight = data.height / data.tilesGrid;
+  var colWidth = data.width / data.tilesWidth;
+  var groundLevel = window.innerHeight;
+  data.tilesMap.forEach(function (item, index) {
+    var Sprite = new PIXI.Sprite.fromFrame(("" + (item.tile)));
+    var SpriteCount = Math.floor((item.x.to - item.x.from) / Sprite.width);
+
+    for (var i = 0; i < SpriteCount; i++) {
+      var newSprite = new PIXI.Sprite.fromFrame(("" + (item.tile)));
+      if (item.y.from !== item.y.to) {
+        newSprite.y = window.innerHeight -
+          Sprite.height -
+          item.y.from -
+          (Sprite.height * i - 3);
+      } else {
+        newSprite.y = window.innerHeight - Sprite.height - item.y.from;
+      }
+      newSprite.x = item.x.from + (Sprite.width * i - 3);
+      stage.addChild(newSprite);
+    }
+    if (item.polygon) {
+      var polygonBody = new p2.Body({
+        position: [0, 650]
+      });
+      polygonBody.fromPolygon(item.polygon);
+      physics.addModel(polygonBody);
+    }
+  });
+};
+
+var Gamefield$$1 = function Gamefield$$1(renderer, physics) {
+  this.player = null;
+  this.renderer = renderer;
+  this.physics = physics;
+  this.actions = new Actions(renderer.stage);
+};
+
+Gamefield$$1.prototype.update = function update (data) {
+    var this$1 = this;
+
+  data.forEach(function (player) {
+    var playerData = this$1.renderer.getPlayer(player.key);
+    if (!playerData) {
+      // Server sends more players, than client has online
+      this$1.addPlayer(player);
+    } else {
+      if (player.value.pos !== playerData.pos) {
+        this$1.actions.playerTurn(playerData, player.value);
+      }
+      //update renderer stats based on server values
+      playerData.pos = player.value.pos;
+      this$1.physics.updatePosition(player);
+      playerData.children[1].rotation = player.value.weapon.rotation;
+    }
+    if (player.value.shot) {
+      this$1.actions.shoot(player.value.shot);
+    }
+  });
+};
+
+Gamefield$$1.prototype.addPlayer = function addPlayer (player) {
+  this.renderer.addPlayer(player);
+  this.physics.addPlayer(player);
+};
+
 Gamefield$$1.prototype.initialize = function initialize (data) {
     var this$1 = this;
 
   return new Promise(function (resolve) {
     this$1.player = data.currentPlayer;
     PIXI.loader.load(function () {
-      load(data.currentMap, this$1.stage);
-      this$1.addBackground();
+      this$1.renderer.addBackground();
       data.payload.forEach(function (player) {
         this$1.addPlayer(player);
       });
+      loadModels(data.currentMap, this$1.renderer.stage, this$1.physics);
+      this$1.renderer.run();
       resolve();
     });
   });
@@ -296,10 +310,11 @@ var socketConfig = {
 
 var socket = new Socket(socketConfig);
 var renderer = new Render$1(renderConfig);
+var physics = new Physics();
 
-var gamefield = new Gamefield$$1(renderer.stage, renderer.background);
-
+var gamefield = new Gamefield$$1(renderer, physics);
 var key = renderer.keys.keymap;
+
 socket.connection.onmessage = function (data) {
   var response = JSON.parse(data.data);
   switch (response.type) {
@@ -310,11 +325,12 @@ socket.connection.onmessage = function (data) {
         { key: 'mapObjects', src: response.currentMap.objects },
         { key: 'tiles', src: response.currentMap.tiles }
       ];
+      physics.setPolygon('worm', response.currentSkin.polygon);
       renderer.stage.width = response.width;
       renderer.stage.height = response.height;
       renderer.loadResources(resources);
+
       gamefield.initialize(response).then(function () {
-        renderer.run();
         socket.send({
           type: 'ready'
         });
@@ -342,11 +358,12 @@ var animations = function (currentPlayer) {
   };
 
   renderer.keys.on(key.W, function () {
-    stats.y -= 3;
-  });
-
-  renderer.keys.on(key.S, function () {
-    stats.y += 3;
+    stats.y -= 10;
+    if (stats.pos === 'R') {
+      stats.x += 6;
+    } else {
+      stats.x -= 6;
+    }
   });
 
   renderer.keys.on(key.A, function () {
@@ -386,11 +403,15 @@ var animations = function (currentPlayer) {
 };
 
 PIXI.ticker.shared.add(function () {
-  var currentPlayer = gamefield.getPlayer();
-  if (currentPlayer) {
-    animations(currentPlayer);
-    renderer.stage.pivot.x = currentPlayer.position.x / 3;
-    renderer.stage.pivot.y = currentPlayer.position.y / 3;
+  var pixiPlayer = renderer.getPlayer(gamefield.player),
+    physicsPlayer = physics.getModel(gamefield.player);
+  physics.container.step(1 / 5);
+  if (pixiPlayer) {
+    pixiPlayer.position.x = physicsPlayer.position[0];
+    pixiPlayer.position.y = physicsPlayer.position[1];
+    animations(pixiPlayer);
+    renderer.stage.pivot.x = pixiPlayer.position.x / 3;
+    renderer.stage.pivot.y = pixiPlayer.position.y / 5;
   }
 
   gamefield.actions.shots.forEach(function (bullet) {

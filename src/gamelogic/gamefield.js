@@ -1,30 +1,27 @@
-import { Player, Weapon, Bullet } from '../models';
 import { Actions } from './index';
-import { load } from '../helpers/loadMapModel';
+import { loadModels } from '../helpers/loadMapModel';
 
 export default class Gamefield {
-  constructor(stage, background) {
+  constructor(renderer, physics) {
     this.player = null;
-    this.stage = stage;
-    this.background = background;
-    this.actions = new Actions(stage);
+    this.renderer = renderer;
+    this.physics = physics;
+    this.actions = new Actions(renderer.stage);
   }
 
   update(data) {
     data.forEach(player => {
-      // !this.resources.has(player.key)
-      if (!this.getPlayer(player.key)) {
+      const playerData = this.renderer.getPlayer(player.key);
+      if (!playerData) {
         // Server sends more players, than client has online
         this.addPlayer(player);
       } else {
-        const playerData = this.getPlayer(player.key);
         if (player.value.pos !== playerData.pos) {
           this.actions.playerTurn(playerData, player.value);
         }
         //update renderer stats based on server values
         playerData.pos = player.value.pos;
-        playerData.x = player.value.x;
-        playerData.y = player.value.y;
+        this.physics.updatePosition(player);
         playerData.children[1].rotation = player.value.weapon.rotation;
       }
       if (player.value.shot) {
@@ -33,47 +30,21 @@ export default class Gamefield {
     });
   }
 
-  getPlayer(player = this.player) {
-    return this.stage.children.filter(item => item.id === player)[0];
-  }
-
   addPlayer(player) {
-    const PlayerModel = new PIXI.Container();
-    const PlayerWorm = new Player(player);
-    const PlayerWeapon = new Weapon(player);
-    PlayerModel.pos = player.value.pos;
-    PlayerModel.x = player.value.x;
-    PlayerModel.x = player.value.y;
-    PlayerModel.addChild(PlayerWorm);
-    PlayerModel.addChild(PlayerWeapon);
-    PlayerModel.id = player.key;
-    this.stage.addChild(PlayerModel);
-    this.actions.playerTurn(PlayerModel, player.value);
-  }
-
-  findDeletedPlayer(id) {
-    const leftPlayer = this.getPlayer(id);
-    this.stage.removeChild(leftPlayer);
-  }
-
-  addBackground(config) {
-    const backgroundIMG = new PIXI.Sprite(
-      PIXI.loader.resources['background'].texture
-    );
-    backgroundIMG.width = window.innerWidth;
-    backgroundIMG.height = window.innerHeight;
-    this.background.addChild(backgroundIMG);
+    this.renderer.addPlayer(player);
+    this.physics.addPlayer(player);
   }
 
   initialize(data) {
     return new Promise(resolve => {
       this.player = data.currentPlayer;
       PIXI.loader.load(() => {
-        load(data.currentMap, this.stage);
-        this.addBackground();
+        this.renderer.addBackground();
         data.payload.forEach(player => {
           this.addPlayer(player);
         });
+        loadModels(data.currentMap, this.renderer.stage, this.physics);
+        this.renderer.run();
         resolve();
       });
     });

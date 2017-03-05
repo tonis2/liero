@@ -9,6 +9,7 @@ class Worm {
       rotation: payload ? payload.weapon.rotation : 0
     };
     this.shot = payload ? payload.shot : null;
+    this.rotation = 0;
   }
   generateRandomNumber() {
     return Math.floor(Math.random() * 250) + 1;
