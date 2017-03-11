@@ -87,6 +87,7 @@ var Player = function Player(params) {
 };
 
 var Weapon = function Weapon(params) {
+  console.log(params);
   this.weapon = new PIXI.Sprite.fromFrame(params.value.weapon.skin);
   this.weapon.x = 5;
   this.weapon.y = 5;
@@ -179,7 +180,9 @@ Physics.prototype.updatePosition = function updatePosition (player) {
   var currentPlayer = this.getModel(player.key);
   currentPlayer.position[0] = player.value.x;
   currentPlayer.position[1] = player.value.y;
-  currentPlayer.angle = player.value.rotation;
+  currentPlayer.pos = player.value.pos;
+  currentPlayer.weaponRotation = player.value.weapon.rotation;
+  return {x: currentPlayer.position[0], y:currentPlayer.position[1], weaponRotation:currentPlayer.weaponRotation}
 };
 
 Physics.prototype.setPolygon = function setPolygon (id, polygon) {
@@ -239,13 +242,17 @@ Gamefield$$1.prototype.update = function update (data) {
       this$1.addPlayer(player);
     } else {
       //Player has turned
-      if (player.value.pos !== playerData.pos) {
-        this$1.actions.playerTurn(playerData, player.value);
-      }
-      //update renderer stats based on server values
-      this$1.physics.updatePosition(player);
+      // if (player.value.pos !== playerData.pos) {
+      // this.actions.playerTurn(playerData, player.value);
+      // }
+      this$1.actions.playerTurn(playerData, player.value);
+
       playerData.pos = player.value.pos;
-      playerData.children[1].rotation = player.value.weapon.rotation;
+      //update renderer stats based on server values
+      var physicsPos = this$1.physics.updatePosition(player);
+      playerData.position.x = physicsPos.x;
+      playerData.position.y = physicsPos.y;
+      playerData.children[1].rotation = physicsPos.weaponRotation;
     }
     if (player.value.shot) {
       this$1.actions.shoot(JSON.parse(player.value.shot));
@@ -351,11 +358,11 @@ socket.connection.onmessage = function (data) {
 var animations = function (currentPlayer) {
   var stats = {
     player: gamefield.player,
-    y: currentPlayer.y,
-    x: currentPlayer.x,
+    y: currentPlayer.position[1],
+    x: currentPlayer.position[0],
     pos: currentPlayer.pos,
     weapon: {
-      rotation: currentPlayer.children[1].rotation
+      rotation: currentPlayer.weaponRotation
     },
     shot: null
   };
@@ -406,15 +413,13 @@ var animations = function (currentPlayer) {
 };
 
 PIXI.ticker.shared.add(function () {
-  var pixiPlayer = renderer.getPlayer(gamefield.player),
-    physicsPlayer = physics.getModel(gamefield.player);
-  physics.container.step(1 / 5);
-  if (pixiPlayer) {
-    pixiPlayer.position.x = physicsPlayer.position[0];
-    pixiPlayer.position.y = physicsPlayer.position[1];
-    animations(pixiPlayer);
-    renderer.stage.pivot.x = pixiPlayer.position.x / 3;
-    renderer.stage.pivot.y = pixiPlayer.position.y / 5;
+  var model = physics.getModel(gamefield.player);
+  physics.container.step(1 /5);
+
+  if (model) {
+    animations(model);
+    renderer.stage.pivot.x = model.position[0] - window.innerWidth/2;
+    renderer.stage.pivot.y = model.position[1] - window.innerHeight/2;
   }
 
   gamefield.actions.shots.forEach(function (bullet) {

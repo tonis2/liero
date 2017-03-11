@@ -17,13 +17,17 @@ export default class Gamefield {
         this.addPlayer(player);
       } else {
         //Player has turned
-        if (player.value.pos !== playerData.pos) {
-          this.actions.playerTurn(playerData, player.value);
-        }
-        //update renderer stats based on server values
-        this.physics.updatePosition(player);
+        // if (player.value.pos !== playerData.pos) {
+        //   this.actions.playerTurn(playerData, player.value);
+        // }
+        this.actions.playerTurn(playerData, player.value);
+
         playerData.pos = player.value.pos;
-        playerData.children[1].rotation = player.value.weapon.rotation;
+        //update renderer stats based on server values
+        const physicsPos = this.physics.updatePosition(player);
+        playerData.position.x = physicsPos.x;
+        playerData.position.y = physicsPos.y;
+        playerData.children[1].rotation = physicsPos.weaponRotation;
       }
       if (player.value.shot) {
         this.actions.shoot(JSON.parse(player.value.shot));

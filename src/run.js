@@ -46,11 +46,11 @@ socket.connection.onmessage = data => {
 const animations = currentPlayer => {
   let stats = {
     player: gamefield.player,
-    y: currentPlayer.y,
-    x: currentPlayer.x,
+    y: currentPlayer.position[1],
+    x: currentPlayer.position[0],
     pos: currentPlayer.pos,
     weapon: {
-      rotation: currentPlayer.children[1].rotation
+      rotation: currentPlayer.weaponRotation
     },
     shot: null
   };
@@ -101,15 +101,13 @@ const animations = currentPlayer => {
 };
 
 PIXI.ticker.shared.add(() => {
-  const pixiPlayer = renderer.getPlayer(gamefield.player),
-    physicsPlayer = physics.getModel(gamefield.player);
-  physics.container.step(1 / 5);
-  if (pixiPlayer) {
-    pixiPlayer.position.x = physicsPlayer.position[0];
-    pixiPlayer.position.y = physicsPlayer.position[1];
-    animations(pixiPlayer);
-    renderer.stage.pivot.x = pixiPlayer.position.x / 3;
-    renderer.stage.pivot.y = pixiPlayer.position.y / 5;
+  const model = physics.getModel(gamefield.player);
+  physics.container.step(1 /5);
+
+  if (model) {
+    animations(model);
+    renderer.stage.pivot.x = model.position[0] - window.innerWidth/2;
+    renderer.stage.pivot.y = model.position[1] - window.innerHeight/2;
   }
 
   gamefield.actions.shots.forEach(bullet => {

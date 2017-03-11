@@ -24,7 +24,9 @@ export default class Physics {
     const currentPlayer = this.getModel(player.key);
     currentPlayer.position[0] = player.value.x;
     currentPlayer.position[1] = player.value.y;
-    currentPlayer.angle = player.value.rotation;
+    currentPlayer.pos = player.value.pos;
+    currentPlayer.weaponRotation = player.value.weapon.rotation;
+    return {x: currentPlayer.position[0], y:currentPlayer.position[1], weaponRotation:currentPlayer.weaponRotation}
   }
 
   setPolygon(id, polygon) {
