@@ -91,7 +91,7 @@ var Weapon = function Weapon(params) {
   this.weapon = new PIXI.Sprite.fromFrame(params.value.weapon.skin);
   this.weapon.x = 5;
   this.weapon.y = 5;
-  this.weapon.rotation = params.value.weapon.rotation;
+  this.weapon.rotation = params.value.weapon.rotation || 5;
   this.weapon.anchor.set(0.7, 0.5);
   return this.weapon;
 };
@@ -169,10 +169,12 @@ Physics.prototype.addModel = function addModel (model) {
 Physics.prototype.addPlayer = function addPlayer (player) {
   var polygonBody = new p2.Body({
     mass: 3,
-    position: [player.value.x, player.value.y]
+    position: [player.value.x, player.value.y],
+    fixedRotation: true,
+    velocity: [5, 0]
   });
   polygonBody.id = player.key;
-  polygonBody.fromPolygon(this.polygons.get('worm'));
+  polygonBody.fromPolygon(this.polygons.get("worm"));
   this.addModel(polygonBody);
 };
 
@@ -182,7 +184,11 @@ Physics.prototype.updatePosition = function updatePosition (player) {
   currentPlayer.position[1] = player.value.y;
   currentPlayer.pos = player.value.pos;
   currentPlayer.weaponRotation = player.value.weapon.rotation;
-  return {x: currentPlayer.position[0], y:currentPlayer.position[1], weaponRotation:currentPlayer.weaponRotation}
+  return {
+    x: currentPlayer.position[0],
+    y: currentPlayer.position[1],
+    weaponRotation: currentPlayer.weaponRotation
+  };
 };
 
 Physics.prototype.setPolygon = function setPolygon (id, polygon) {
@@ -246,13 +252,12 @@ Gamefield$$1.prototype.update = function update (data) {
       // this.actions.playerTurn(playerData, player.value);
       // }
       this$1.actions.playerTurn(playerData, player.value);
-
       playerData.pos = player.value.pos;
       //update renderer stats based on server values
       var physicsPos = this$1.physics.updatePosition(player);
       playerData.position.x = physicsPos.x;
       playerData.position.y = physicsPos.y;
-      playerData.children[1].rotation = physicsPos.weaponRotation;
+      playerData.children[1].rotation = physicsPos.weaponRotation || 0;
     }
     if (player.value.shot) {
       this$1.actions.shoot(JSON.parse(player.value.shot));
@@ -315,7 +320,7 @@ var renderConfig = {
 };
 
 var socketConfig = {
-  url: 'ws://localhost:3000'
+  url: "ws://localhost:3000"
 };
 
 var socket = new Socket(socketConfig);
@@ -325,31 +330,36 @@ var physics = new Physics();
 var gamefield = new Gamefield$$1(renderer, physics);
 var key = renderer.keys.keymap;
 
+var timeouts = {
+  jump: false,
+  shoot: false
+};
+
 socket.connection.onmessage = function (data) {
   var response = JSON.parse(data.data);
   switch (response.type) {
-    case 'init':
+    case "init":
       var resources = [
-        { key: 'skin', src: response.currentSkin.objects },
-        { key: 'background', src: response.currentMap.background },
-        { key: 'mapObjects', src: response.currentMap.objects },
-        { key: 'tiles', src: response.currentMap.tiles }
+        { key: "skin", src: response.currentSkin.objects },
+        { key: "background", src: response.currentMap.background },
+        { key: "mapObjects", src: response.currentMap.objects },
+        { key: "tiles", src: response.currentMap.tiles }
       ];
-      physics.setPolygon('worm', response.currentSkin.polygon);
+      physics.setPolygon("worm", response.currentSkin.polygon);
       renderer.stage.width = response.width;
       renderer.stage.height = response.height;
       renderer.loadResources(resources);
 
       gamefield.initialize(response).then(function () {
         socket.send({
-          type: 'ready'
+          type: "ready"
         });
       });
       break;
-    case 'update':
+    case "update":
       gamefield.update(response.payload);
       break;
-    case 'disconnect':
+    case "disconnect":
       renderer.findDeletedPlayer(response.payload);
       break;
   }
@@ -368,26 +378,36 @@ var animations = function (currentPlayer) {
   };
 
   renderer.keys.on(key.W, function () {
-    stats.y -= 10;
-    if (stats.pos === 'R') {
-      stats.x += 6;
-    } else {
-      stats.x -= 6;
+    if (!timeouts.jump) {
+      currentPlayer.velocity[1] = -50;
+      stats.y -= 20;
+      if (stats.pos === "R") {
+        stats.x += 6;
+      } else {
+        stats.x -= 6;
+      }
+      timeouts.jump = true;
+      setTimeout(
+        function () {
+          timeouts.jump = false;
+        },
+        1600
+      );
     }
   });
 
   renderer.keys.on(key.A, function () {
     stats.x -= 3;
-    stats.pos = 'L';
+    stats.pos = "L";
   });
 
   renderer.keys.on(key.D, function () {
     stats.x += 3;
-    stats.pos = 'R';
+    stats.pos = "R";
   });
 
   renderer.keys.on(key.UP, function () {
-    if (stats.pos === 'R') {
+    if (stats.pos === "R") {
       stats.weapon.rotation -= 0.1;
     } else {
       stats.weapon.rotation += 0.1;
@@ -395,7 +415,7 @@ var animations = function (currentPlayer) {
   });
 
   renderer.keys.on(key.DOWN, function () {
-    if (stats.pos === 'R') {
+    if (stats.pos === "R") {
       stats.weapon.rotation += 0.1;
     } else {
       stats.weapon.rotation -= 0.1;
@@ -407,35 +427,28 @@ var animations = function (currentPlayer) {
   });
 
   socket.send({
-    type: 'update',
+    type: "update",
     stats: stats
   });
 };
 
 PIXI.ticker.shared.add(function () {
   var model = physics.getModel(gamefield.player);
-  physics.container.step(1 /5);
-
+  physics.container.step(1 / 5);
   if (model) {
+    renderer.stage.pivot.x = model.position[0] - window.innerWidth / 2;
     animations(model);
-    renderer.stage.pivot.x = model.position[0] - window.innerWidth/2;
-    renderer.stage.pivot.y = model.position[1] - window.innerHeight/2;
   }
 
   gamefield.actions.shots.forEach(function (bullet) {
-    if (bullet.pos === 'R') {
+    if (bullet.pos === "R") {
       bullet.x += Math.cos(bullet.rotation) * bullet.speed;
       bullet.y += Math.sin(bullet.rotation) * bullet.speed;
     } else {
       bullet.x -= Math.cos(bullet.rotation) * bullet.speed;
       bullet.y -= Math.sin(bullet.rotation) * bullet.speed;
     }
-    if (
-      bullet.x > 800 ||
-      bullet.x === 0 ||
-      bullet.y > 800 ||
-      bullet.y === 0
-    ) {
+    if (bullet.x > 800 || bullet.x === 0 || bullet.y > 800 || bullet.y === 0) {
       renderer.stage.removeChild(bullet);
       gamefield.actions.shots.delete(bullet.uuid);
     }

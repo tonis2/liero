@@ -21,13 +21,12 @@ export default class Gamefield {
         //   this.actions.playerTurn(playerData, player.value);
         // }
         this.actions.playerTurn(playerData, player.value);
-
         playerData.pos = player.value.pos;
         //update renderer stats based on server values
         const physicsPos = this.physics.updatePosition(player);
         playerData.position.x = physicsPos.x;
         playerData.position.y = physicsPos.y;
-        playerData.children[1].rotation = physicsPos.weaponRotation;
+        playerData.children[1].rotation = physicsPos.weaponRotation || 0;
       }
       if (player.value.shot) {
         this.actions.shoot(JSON.parse(player.value.shot));

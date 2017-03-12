@@ -13,10 +13,12 @@ export default class Physics {
   addPlayer(player) {
     const polygonBody = new p2.Body({
       mass: 3,
-      position: [player.value.x, player.value.y]
+      position: [player.value.x, player.value.y],
+      fixedRotation: true,
+      velocity: [5, 0]
     });
     polygonBody.id = player.key;
-    polygonBody.fromPolygon(this.polygons.get('worm'));
+    polygonBody.fromPolygon(this.polygons.get("worm"));
     this.addModel(polygonBody);
   }
 
@@ -26,7 +28,11 @@ export default class Physics {
     currentPlayer.position[1] = player.value.y;
     currentPlayer.pos = player.value.pos;
     currentPlayer.weaponRotation = player.value.weapon.rotation;
-    return {x: currentPlayer.position[0], y:currentPlayer.position[1], weaponRotation:currentPlayer.weaponRotation}
+    return {
+      x: currentPlayer.position[0],
+      y: currentPlayer.position[1],
+      weaponRotation: currentPlayer.weaponRotation
+    };
   }
 
   setPolygon(id, polygon) {
