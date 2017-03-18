@@ -55,7 +55,7 @@ const animations = currentPlayer => {
     x: currentPlayer.position[0],
     pos: currentPlayer.pos,
     weapon: {
-      rotation: currentPlayer.weaponRotation
+      rotation: currentPlayer.weapon.rotation
     },
     shot: null
   };
@@ -106,7 +106,16 @@ const animations = currentPlayer => {
   });
 
   renderer.keys.on(key.SHIFT, () => {
-    stats.shot = JSON.stringify(stats);
+      if (!timeouts.shoot) {
+          stats.shot = JSON.stringify(stats);
+          timeouts.shoot = true;
+          setTimeout(
+            () => {
+              timeouts.shoot = false;
+            },
+            300
+          );
+      }
   });
 
   socket.send({

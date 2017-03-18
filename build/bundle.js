@@ -87,11 +87,10 @@ var Player = function Player(params) {
 };
 
 var Weapon = function Weapon(params) {
-  console.log(params);
   this.weapon = new PIXI.Sprite.fromFrame(params.value.weapon.skin);
   this.weapon.x = 5;
   this.weapon.y = 5;
-  this.weapon.rotation = params.value.weapon.rotation || 5;
+  this.weapon.rotation = params.value.weapon.rotation;
   this.weapon.anchor.set(0.7, 0.5);
   return this.weapon;
 };
@@ -174,6 +173,8 @@ Physics.prototype.addPlayer = function addPlayer (player) {
     velocity: [5, 0]
   });
   polygonBody.id = player.key;
+  polygonBody.pos = player.value.pos;
+  polygonBody.weapon = player.value.weapon;
   polygonBody.fromPolygon(this.polygons.get("worm"));
   this.addModel(polygonBody);
 };
@@ -182,12 +183,12 @@ Physics.prototype.updatePosition = function updatePosition (player) {
   var currentPlayer = this.getModel(player.key);
   currentPlayer.position[0] = player.value.x;
   currentPlayer.position[1] = player.value.y;
+  currentPlayer.weapon = player.value.weapon;
   currentPlayer.pos = player.value.pos;
-  currentPlayer.weaponRotation = player.value.weapon.rotation;
   return {
     x: currentPlayer.position[0],
     y: currentPlayer.position[1],
-    weaponRotation: currentPlayer.weaponRotation
+    weapon: currentPlayer.weapon
   };
 };
 
@@ -248,16 +249,15 @@ Gamefield$$1.prototype.update = function update (data) {
       this$1.addPlayer(player);
     } else {
       //Player has turned
-      // if (player.value.pos !== playerData.pos) {
-      // this.actions.playerTurn(playerData, player.value);
-      // }
-      this$1.actions.playerTurn(playerData, player.value);
+      if (player.value.pos !== playerData.pos) {
+        this$1.actions.playerTurn(playerData, player.value);
+      }
       playerData.pos = player.value.pos;
       //update renderer stats based on server values
       var physicsPos = this$1.physics.updatePosition(player);
       playerData.position.x = physicsPos.x;
       playerData.position.y = physicsPos.y;
-      playerData.children[1].rotation = physicsPos.weaponRotation || 0;
+      playerData.children[1].rotation = physicsPos.weapon.rotation;
     }
     if (player.value.shot) {
       this$1.actions.shoot(JSON.parse(player.value.shot));
@@ -268,8 +268,10 @@ Gamefield$$1.prototype.update = function update (data) {
 Gamefield$$1.prototype.addPlayer = function addPlayer (player) {
   this.physics.addPlayer(player);
   this.renderer.addPlayer(player);
-  // const playerData = this.renderer.getPlayer(this.player);
-  // this.actions.playerTurn(playerData, player.value);
+  var playerData = this.renderer.getPlayer(player.key);
+  if(playerData) {
+    this.actions.playerTurn(playerData, player.value);
+  }
 };
 
 Gamefield$$1.prototype.initialize = function initialize (data) {
@@ -372,7 +374,7 @@ var animations = function (currentPlayer) {
     x: currentPlayer.position[0],
     pos: currentPlayer.pos,
     weapon: {
-      rotation: currentPlayer.weaponRotation
+      rotation: currentPlayer.weapon.rotation
     },
     shot: null
   };
@@ -423,7 +425,16 @@ var animations = function (currentPlayer) {
   });
 
   renderer.keys.on(key.SHIFT, function () {
-    stats.shot = JSON.stringify(stats);
+      if (!timeouts.shoot) {
+          stats.shot = JSON.stringify(stats);
+          timeouts.shoot = true;
+          setTimeout(
+            function () {
+              timeouts.shoot = false;
+            },
+            300
+          );
+      }
   });
 
   socket.send({

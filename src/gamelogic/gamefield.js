@@ -17,16 +17,15 @@ export default class Gamefield {
         this.addPlayer(player);
       } else {
         //Player has turned
-        // if (player.value.pos !== playerData.pos) {
-        //   this.actions.playerTurn(playerData, player.value);
-        // }
-        this.actions.playerTurn(playerData, player.value);
+        if (player.value.pos !== playerData.pos) {
+          this.actions.playerTurn(playerData, player.value);
+        }
         playerData.pos = player.value.pos;
         //update renderer stats based on server values
         const physicsPos = this.physics.updatePosition(player);
         playerData.position.x = physicsPos.x;
         playerData.position.y = physicsPos.y;
-        playerData.children[1].rotation = physicsPos.weaponRotation || 0;
+        playerData.children[1].rotation = physicsPos.weapon.rotation;
       }
       if (player.value.shot) {
         this.actions.shoot(JSON.parse(player.value.shot));
@@ -37,8 +36,10 @@ export default class Gamefield {
   addPlayer(player) {
     this.physics.addPlayer(player);
     this.renderer.addPlayer(player);
-    // const playerData = this.renderer.getPlayer(this.player);
-    // this.actions.playerTurn(playerData, player.value);
+    const playerData = this.renderer.getPlayer(player.key);
+    if(playerData) {
+      this.actions.playerTurn(playerData, player.value);
+    }
   }
 
   initialize(data) {

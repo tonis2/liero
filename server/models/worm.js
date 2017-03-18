@@ -6,7 +6,7 @@ class Worm {
     this.pos = payload ? payload.pos : 'R';
     this.weapon = {
       skin: 'gun',
-      rotation: payload ? payload.weapon.rotation : 5
+      rotation: payload ? payload.weapon.rotation : 0
     };
     this.shot = payload ? payload.shot : null;
     this.rotation = 0;
