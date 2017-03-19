@@ -59,14 +59,15 @@ ListenKeys.prototype.listenKeys = function listenKeys (keys$$1) {
 };
 
 var Bullet = function Bullet(params) {
-  this.bullet = new PIXI.Sprite.fromFrame('bullet');
+  this.bullet = new PIXI.Sprite.fromFrame("bullet");
   this.bullet.rotation = params.weapon.rotation;
   this.bullet.speed = 5;
   this.bullet.delay = 300;
   this.bullet.ammo = 60;
+  this.bullet.range = 600;
   this.bullet.reload = 2000;
   this.bullet.pos = params.pos;
-  if (params.pos === 'L') {
+  if (params.pos === "L") {
     this.bullet.scale.x = -1;
     this.bullet.x = params.x + Math.sin(params.weapon.rotation) * 40;
     this.bullet.y = params.y + Math.cos(params.weapon.rotation) * 20;
@@ -340,8 +341,8 @@ var gamefield = new Gamefield$$1(renderer, physics);
 var key = renderer.keys.keymap;
 
 var timeouts = {
-  jump: false,
-  shoot: false
+  jump: { value: false, time: 1500 },
+  shoot: { value: false, time: 200 }
 };
 
 socket.connection.onmessage = function (data) {
@@ -387,19 +388,19 @@ var animations = function (currentPlayer) {
   };
 
   renderer.keys.on(key.W, function () {
-    if (!timeouts.jump) {
+    if (!timeouts.jump.value) {
       currentPlayer.velocity[1] = -70;
       if (stats.pos === "R") {
         currentPlayer.velocity[0] = 10;
       } else {
         currentPlayer.velocity[0] = -10;
       }
-      timeouts.jump = true;
+      timeouts.jump.value = true;
       setTimeout(
         function () {
-          timeouts.jump = false;
+          timeouts.jump.value = false;
         },
-        1600
+        timeouts.jump.time
       );
     }
   });
@@ -431,14 +432,14 @@ var animations = function (currentPlayer) {
   });
 
   renderer.keys.on(key.SHIFT, function () {
-    if (!timeouts.shoot) {
+    if (!timeouts.shoot.value) {
       stats.shot = JSON.stringify(stats);
-      timeouts.shoot = true;
+      timeouts.shoot.value = true;
       setTimeout(
         function () {
-          timeouts.shoot = false;
+          timeouts.shoot.value = false;
         },
-        300
+        timeouts.shoot.time
       );
     }
   });
@@ -466,9 +467,11 @@ PIXI.ticker.shared.add(function () {
       bullet.y -= Math.sin(bullet.rotation) * bullet.speed;
     }
     if (
-      bullet.x - model.position[0] > 100 ||
+      bullet.x - model.position[0] > bullet.range ||
+      bullet.x - model.position[0] < -bullet.range ||
       bullet.x === 0 ||
-      bullet.y - model.position[1] > 100 ||
+      bullet.y - model.position[1] > bullet.range ||
+      bullet.y - model.position[1] < -bullet.range ||
       bullet.y === 0
     ) {
       renderer.stage.removeChild(bullet);
