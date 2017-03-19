@@ -5,7 +5,9 @@ export const loadModels = (data, stage, physics) => {
   const groundLevel = window.innerHeight;
   data.tilesMap.forEach((item, index) => {
     const Sprite = new PIXI.Sprite.fromFrame(`${item.tile}`);
-    const SpriteCount = Math.floor((item.x.to - item.x.from) / Sprite.width);
+    const SpriteCount = item.x.to !== item.x.from
+      ? Math.floor((item.x.to - item.x.from) / Sprite.width)
+      : 1;
 
     for (let i = 0; i < SpriteCount; i++) {
       const newSprite = new PIXI.Sprite.fromFrame(`${item.tile}`);
@@ -17,14 +19,19 @@ export const loadModels = (data, stage, physics) => {
       } else {
         newSprite.y = window.innerHeight - Sprite.height - item.y.from;
       }
-      newSprite.x = item.x.from + (Sprite.width * i - 3);
+      if (item.x.from === item.x.to) {
+        newSprite.x = item.x.from;
+      } else {
+        newSprite.x = item.x.from + (Sprite.width * i - 3);
+      }
       stage.addChild(newSprite);
     }
     if (item.polygon) {
+      const polygonY = window.innerHeight - item.polygon.y;
       const polygonBody = new p2.Body({
-        position: [0, 650]
+        position: [item.polygon.x, polygonY]
       });
-      polygonBody.fromPolygon(item.polygon);
+      polygonBody.fromPolygon(item.polygon.map);
       physics.addModel(polygonBody);
     }
   });

@@ -62,12 +62,11 @@ const animations = currentPlayer => {
 
   renderer.keys.on(key.W, () => {
     if (!timeouts.jump) {
-      currentPlayer.velocity[1] = -50;
-      stats.y -= 20;
+      currentPlayer.velocity[1] = -70;
       if (stats.pos === "R") {
-        stats.x += 6;
+        currentPlayer.velocity[0] = 10;
       } else {
-        stats.x -= 6;
+        currentPlayer.velocity[0] = -10;
       }
       timeouts.jump = true;
       setTimeout(
@@ -106,16 +105,16 @@ const animations = currentPlayer => {
   });
 
   renderer.keys.on(key.SHIFT, () => {
-      if (!timeouts.shoot) {
-          stats.shot = JSON.stringify(stats);
-          timeouts.shoot = true;
-          setTimeout(
-            () => {
-              timeouts.shoot = false;
-            },
-            300
-          );
-      }
+    if (!timeouts.shoot) {
+      stats.shot = JSON.stringify(stats);
+      timeouts.shoot = true;
+      setTimeout(
+        () => {
+          timeouts.shoot = false;
+        },
+        300
+      );
+    }
   });
 
   socket.send({
@@ -140,7 +139,12 @@ PIXI.ticker.shared.add(() => {
       bullet.x -= Math.cos(bullet.rotation) * bullet.speed;
       bullet.y -= Math.sin(bullet.rotation) * bullet.speed;
     }
-    if (bullet.x > 800 || bullet.x === 0 || bullet.y > 800 || bullet.y === 0) {
+    if (
+      bullet.x - model.position[0] > 100 ||
+      bullet.x === 0 ||
+      bullet.y - model.position[1] > 100 ||
+      bullet.y === 0
+    ) {
       renderer.stage.removeChild(bullet);
       gamefield.actions.shots.delete(bullet.uuid);
     }

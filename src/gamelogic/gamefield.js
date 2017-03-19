@@ -37,7 +37,7 @@ export default class Gamefield {
     this.physics.addPlayer(player);
     this.renderer.addPlayer(player);
     const playerData = this.renderer.getPlayer(player.key);
-    if(playerData) {
+    if (playerData) {
       this.actions.playerTurn(playerData, player.value);
     }
   }

@@ -207,7 +207,9 @@ var loadModels = function (data, stage, physics) {
   var groundLevel = window.innerHeight;
   data.tilesMap.forEach(function (item, index) {
     var Sprite = new PIXI.Sprite.fromFrame(("" + (item.tile)));
-    var SpriteCount = Math.floor((item.x.to - item.x.from) / Sprite.width);
+    var SpriteCount = item.x.to !== item.x.from
+      ? Math.floor((item.x.to - item.x.from) / Sprite.width)
+      : 1;
 
     for (var i = 0; i < SpriteCount; i++) {
       var newSprite = new PIXI.Sprite.fromFrame(("" + (item.tile)));
@@ -219,14 +221,19 @@ var loadModels = function (data, stage, physics) {
       } else {
         newSprite.y = window.innerHeight - Sprite.height - item.y.from;
       }
-      newSprite.x = item.x.from + (Sprite.width * i - 3);
+      if (item.x.from === item.x.to) {
+        newSprite.x = item.x.from;
+      } else {
+        newSprite.x = item.x.from + (Sprite.width * i - 3);
+      }
       stage.addChild(newSprite);
     }
     if (item.polygon) {
+      var polygonY = window.innerHeight - item.polygon.y;
       var polygonBody = new p2.Body({
-        position: [0, 650]
+        position: [item.polygon.x, polygonY]
       });
-      polygonBody.fromPolygon(item.polygon);
+      polygonBody.fromPolygon(item.polygon.map);
       physics.addModel(polygonBody);
     }
   });
@@ -269,7 +276,7 @@ Gamefield$$1.prototype.addPlayer = function addPlayer (player) {
   this.physics.addPlayer(player);
   this.renderer.addPlayer(player);
   var playerData = this.renderer.getPlayer(player.key);
-  if(playerData) {
+  if (playerData) {
     this.actions.playerTurn(playerData, player.value);
   }
 };
@@ -381,12 +388,11 @@ var animations = function (currentPlayer) {
 
   renderer.keys.on(key.W, function () {
     if (!timeouts.jump) {
-      currentPlayer.velocity[1] = -50;
-      stats.y -= 20;
+      currentPlayer.velocity[1] = -70;
       if (stats.pos === "R") {
-        stats.x += 6;
+        currentPlayer.velocity[0] = 10;
       } else {
-        stats.x -= 6;
+        currentPlayer.velocity[0] = -10;
       }
       timeouts.jump = true;
       setTimeout(
@@ -425,16 +431,16 @@ var animations = function (currentPlayer) {
   });
 
   renderer.keys.on(key.SHIFT, function () {
-      if (!timeouts.shoot) {
-          stats.shot = JSON.stringify(stats);
-          timeouts.shoot = true;
-          setTimeout(
-            function () {
-              timeouts.shoot = false;
-            },
-            300
-          );
-      }
+    if (!timeouts.shoot) {
+      stats.shot = JSON.stringify(stats);
+      timeouts.shoot = true;
+      setTimeout(
+        function () {
+          timeouts.shoot = false;
+        },
+        300
+      );
+    }
   });
 
   socket.send({
@@ -459,7 +465,12 @@ PIXI.ticker.shared.add(function () {
       bullet.x -= Math.cos(bullet.rotation) * bullet.speed;
       bullet.y -= Math.sin(bullet.rotation) * bullet.speed;
     }
-    if (bullet.x > 800 || bullet.x === 0 || bullet.y > 800 || bullet.y === 0) {
+    if (
+      bullet.x - model.position[0] > 100 ||
+      bullet.x === 0 ||
+      bullet.y - model.position[1] > 100 ||
+      bullet.y === 0
+    ) {
       renderer.stage.removeChild(bullet);
       gamefield.actions.shots.delete(bullet.uuid);
     }
