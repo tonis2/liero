@@ -1,56 +1,45 @@
-const WebSocketServer = require('uws').Server;
-const uuidV1 = require('uuid/v1');
-const Players = require('./players.collection.js');
+const WebSocketServer = require("uws").Server;
 const wss = new WebSocketServer({ port: 3000 });
-const players = new Players();
-const map = require('./maps/maps.json');
-const skin = require('./skins/player.json');
-const wsList = new Map();
+const serverList = require("./serverlist.json");
+const Game = require("./server.collection.js");
+const GameList = new Map();
 
-wss.on('connection', ws => {
-  const currentPlayer = players.createPlayer();
-  wsList.set(currentPlayer, ws);
+serverList.forEach(server => {
+  const GameServer = new Game(server);
+  GameList.set(GameServer.id, GameServer);
+});
 
-  //When player leaves send message to others to delete
-  ws.on('close', message => {
-    players.remove(currentPlayer);
-    wsList.delete(currentPlayer);
-    wsList.forEach(socket => {
-      socket.send(
-        JSON.stringify({ type: 'disconnect', payload: currentPlayer })
-      );
-    });
-  });
+wss.on("connection", ws => {
+  ws.send(
+    JSON.stringify({ type: "serversInfo", payload: [...GameList.values()] })
+  );
 
-  //Constantly send updates about player movements
-  const startUpdates = () => {
-    setInterval(
-      () => {
-        ws.send(
-          JSON.stringify({ type: 'update', payload: players.getPlayers() })
-        );
-      },
-      20
-    );
-  };
-
-  ws.on('message', message => {
+  ws.on("message", message => {
     const data = JSON.parse(message);
-    if (data.type === 'update') {
+    const server = GameList.get(data.GameServerId);
+    if (data.type === "update") {
       players.update(data.stats);
     }
-    if (data.type === 'ready') {
-      startUpdates();
+
+    if (data.type === "ready") {
+      GameServer.startUpdates(playerId);
+    }
+
+    if (data.type === "createServer") {
+      const GameServer = new Game(data.params);
+      GameList.set(GameServer.id, GameServer);
+    }
+
+    if (data.type === "addPlayer") {
+      server.addPlayer(data.player, ws);
+    }
+
+    if (data.type === "startServer") {
+      server.start();
+    }
+
+    if (data.type === "destroyServer") {
+      GameList.delete(data.GameServerId);
     }
   });
-
-  ws.send(
-    JSON.stringify({
-      type: 'init',
-      payload: players.getPlayers(),
-      currentPlayer: currentPlayer,
-      currentMap: map[0].desert,
-      currentSkin: skin[0].default
-    })
-  );
 });

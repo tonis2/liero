@@ -1,6 +1,6 @@
-const uuidV1 = require('uuid/v1');
+const uuidV1 = require("uuid/v1");
 
-const worm = require('./models/worm');
+const worm = require("./models/worm");
 
 class Players {
   constructor() {
@@ -28,7 +28,7 @@ class Players {
   }
 
   update(payload) {
-    this.add(payload.player, new worm(payload));
+    this.collection.set(payload.player, new worm(payload));
   }
 
   createPlayer() {
