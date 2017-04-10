@@ -13,7 +13,7 @@ export default class Render {
     this.background = new PIXI.Container();
     this.world.addChild(this.background);
     this.world.addChild(this.stage);
-    document.body.appendChild(this.renderer.view);
+    document.getElementById("gameWindow").appendChild(this.renderer.view);
   }
 
   getPlayer(player = this.player) {

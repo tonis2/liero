@@ -162,6 +162,14 @@ var toLowerCase = function (s) { return lcCache[s] || (lcCache[s] = s.toLowerCas
 var resolved = typeof Promise!=='undefined' && Promise.resolve();
 var defer = resolved ? (function (f) { resolved.then(f); }) : setTimeout;
 
+function cloneElement(vnode, props) {
+	return h(
+		vnode.nodeName,
+		extend(clone(vnode.attributes), props),
+		arguments.length>2 ? [].slice.call(arguments, 2) : vnode.children
+	);
+}
+
 // render modes
 
 var NO_RENDER = 0;
@@ -169,7 +177,7 @@ var SYNC_RENDER = 1;
 var FORCE_RENDER = 2;
 var ASYNC_RENDER = 3;
 
-var EMPTY = {};
+var EMPTY$1$1 = {};
 
 var ATTR_KEY = typeof Symbol!=='undefined' ? Symbol.for('preactattr') : '__preactattr_';
 
@@ -228,7 +236,7 @@ function isFunctionalComponent(vnode) {
  *	@private
  */
 function buildFunctionalComponent(vnode, context) {
-	return vnode.nodeName(getNodeProps(vnode), context || EMPTY);
+	return vnode.nodeName(getNodeProps(vnode), context || EMPTY$1$1);
 }
 
 function isSameNodeType(node, vnode) {
@@ -1081,6 +1089,353 @@ function render(vnode, parent, merge) {
 	return diff(merge, vnode, {}, false, parent);
 }
 
+var EMPTY$1 = {};
+
+function exec(url, route) {
+	var opts = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : EMPTY$1;
+
+	var reg = /(?:\?([^#]*))?(#.*)?$/,
+	    c = url.match(reg),
+	    matches = {},
+	    ret = void 0;
+	if (c && c[1]) {
+		var p = c[1].split('&');
+		for (var i = 0; i < p.length; i++) {
+			var r = p[i].split('=');
+			matches[decodeURIComponent(r[0])] = decodeURIComponent(r.slice(1).join('='));
+		}
+	}
+	url = segmentize(url.replace(reg, ''));
+	route = segmentize(route || '');
+	var max = Math.max(url.length, route.length);
+	for (var _i = 0; _i < max; _i++) {
+		if (route[_i] && route[_i].charAt(0) === ':') {
+			var param = route[_i].replace(/(^\:|[+*?]+$)/g, ''),
+			    flags = (route[_i].match(/[+*?]+$/) || EMPTY$1)[0] || '',
+			    plus = ~flags.indexOf('+'),
+			    star = ~flags.indexOf('*'),
+			    val = url[_i] || '';
+			if (!val && !star && (flags.indexOf('?') < 0 || plus)) {
+				ret = false;
+				break;
+			}
+			matches[param] = decodeURIComponent(val);
+			if (plus || star) {
+				matches[param] = url.slice(_i).map(decodeURIComponent).join('/');
+				break;
+			}
+		} else if (route[_i] !== url[_i]) {
+			ret = false;
+			break;
+		}
+	}
+	if (opts.default !== true && ret === false) { return false; }
+	return matches;
+}
+
+function pathRankSort(a, b) {
+	var aAttr = a.attributes || EMPTY$1,
+	    bAttr = b.attributes || EMPTY$1;
+	if (aAttr.default) { return 1; }
+	if (bAttr.default) { return -1; }
+	var diff = rank(aAttr.path) - rank(bAttr.path);
+	return diff || aAttr.path.length - bAttr.path.length;
+}
+
+function segmentize(url) {
+	return strip(url).split('/');
+}
+
+function rank(url) {
+	return (strip(url).match(/\/+/g) || '').length;
+}
+
+function strip(url) {
+	return url.replace(/(^\/+|\/+$)/g, '');
+}
+
+var _extends = Object.assign || function (target) {
+var arguments$1 = arguments;
+ for (var i = 1; i < arguments.length; i++) { var source = arguments$1[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) { Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; } }
+
+var customHistory = null;
+
+var ROUTERS = [];
+
+var EMPTY = {};
+
+function isPreactElement(node) {
+	return node.__preactattr_ != null || typeof Symbol !== 'undefined' && node[Symbol.for('preactattr')] != null;
+}
+
+function setUrl(url) {
+	var type = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'push';
+
+	if (customHistory && customHistory[type]) {
+		customHistory[type](url);
+	} else if (typeof history !== 'undefined' && history[type + 'State']) {
+		history[type + 'State'](null, null, url);
+	}
+}
+
+function getCurrentUrl() {
+	var url = void 0;
+	if (customHistory && customHistory.location) {
+		url = customHistory.location;
+	} else if (customHistory && customHistory.getCurrentLocation) {
+		url = customHistory.getCurrentLocation();
+	} else {
+		url = typeof location !== 'undefined' ? location : EMPTY;
+	}
+	return '' + (url.pathname || '') + (url.search || '');
+}
+
+function route(url) {
+	var replace = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+
+	if (typeof url !== 'string' && url.url) {
+		replace = url.replace;
+		url = url.url;
+	}
+
+	// only push URL into history if we can handle it
+	if (canRoute(url)) {
+		setUrl(url, replace ? 'replace' : 'push');
+	}
+
+	return routeTo(url);
+}
+
+/** Check if the given URL can be handled by any router instances. */
+function canRoute(url) {
+	for (var i = ROUTERS.length; i--;) {
+		if (ROUTERS[i].canRoute(url)) { return true; }
+	}
+	return false;
+}
+
+/** Tell all router instances to handle the given URL.  */
+function routeTo(url) {
+	var didRoute = false;
+	for (var i = 0; i < ROUTERS.length; i++) {
+		if (ROUTERS[i].routeTo(url) === true) {
+			didRoute = true;
+		}
+	}
+	return didRoute;
+}
+
+function routeFromLink(node) {
+	// only valid elements
+	if (!node || !node.getAttribute) { return; }
+
+	var href = node.getAttribute('href'),
+	    target = node.getAttribute('target');
+
+	// ignore links with targets and non-path URLs
+	if (!href || !href.match(/^\//g) || target && !target.match(/^_?self$/i)) { return; }
+
+	// attempt to route, if no match simply cede control to browser
+	return route(href);
+}
+
+function handleLinkClick(e) {
+	if (e.button !== 0) { return; }
+	routeFromLink(e.currentTarget || e.target || this);
+	return prevent(e);
+}
+
+function prevent(e) {
+	if (e) {
+		if (e.stopImmediatePropagation) { e.stopImmediatePropagation(); }
+		if (e.stopPropagation) { e.stopPropagation(); }
+		e.preventDefault();
+	}
+	return false;
+}
+
+function delegateLinkHandler(e) {
+	// ignore events the browser takes care of already:
+	if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || e.button !== 0) { return; }
+
+	var t = e.target;
+	do {
+		if (String(t.nodeName).toUpperCase() === 'A' && t.getAttribute('href') && isPreactElement(t)) {
+			if (t.hasAttribute('native')) { return; }
+			// if link is handled by the router, prevent browser defaults
+			if (routeFromLink(t)) {
+				return prevent(e);
+			}
+		}
+	} while (t = t.parentNode);
+}
+
+var eventListenersInitialized = false;
+
+function initEventListeners() {
+	if (eventListenersInitialized) {
+		return;
+	}
+
+	if (typeof addEventListener === 'function') {
+		if (!customHistory) {
+			addEventListener('popstate', function () {
+				return routeTo(getCurrentUrl());
+			});
+		}
+		addEventListener('click', delegateLinkHandler);
+	}
+	eventListenersInitialized = true;
+}
+
+var Link = function Link(props) {
+	return h('a', _extends({}, props, { onClick: handleLinkClick }));
+};
+
+var Router = function (_Component) {
+	_inherits(Router, _Component);
+
+	function Router(props) {
+		_classCallCheck(this, Router);
+
+		var _this = _possibleConstructorReturn(this, _Component.call(this, props));
+
+		if (props.history) {
+			customHistory = props.history;
+		}
+
+		_this.state = {
+			url: _this.props.url || getCurrentUrl()
+		};
+
+		initEventListeners();
+		return _this;
+	}
+
+	Router.prototype.shouldComponentUpdate = function shouldComponentUpdate(props) {
+		if (props.static !== true) { return true; }
+		return props.url !== this.props.url || props.onChange !== this.props.onChange;
+	};
+
+	/** Check if the given URL can be matched against any children */
+
+
+	Router.prototype.canRoute = function canRoute(url) {
+		return this.getMatchingChildren(this.props.children, url, false).length > 0;
+	};
+
+	/** Re-render children with a new URL to match against. */
+
+
+	Router.prototype.routeTo = function routeTo(url) {
+		this._didRoute = false;
+		this.setState({ url: url });
+
+		// if we're in the middle of an update, don't synchronously re-route.
+		if (this.updating) { return this.canRoute(url); }
+
+		this.forceUpdate();
+		return this._didRoute;
+	};
+
+	Router.prototype.componentWillMount = function componentWillMount() {
+		ROUTERS.push(this);
+		this.updating = true;
+	};
+
+	Router.prototype.componentDidMount = function componentDidMount() {
+		var _this2 = this;
+
+		if (customHistory) {
+			this.unlisten = customHistory.listen(function (location) {
+				_this2.routeTo('' + (location.pathname || '') + (location.search || ''));
+			});
+		}
+		this.updating = false;
+	};
+
+	Router.prototype.componentWillUnmount = function componentWillUnmount() {
+		if (typeof this.unlisten === 'function') { this.unlisten(); }
+		ROUTERS.splice(ROUTERS.indexOf(this), 1);
+	};
+
+	Router.prototype.componentWillUpdate = function componentWillUpdate() {
+		this.updating = true;
+	};
+
+	Router.prototype.componentDidUpdate = function componentDidUpdate() {
+		this.updating = false;
+	};
+
+	Router.prototype.getMatchingChildren = function getMatchingChildren(children, url, invoke) {
+		return children.slice().sort(pathRankSort).map(function (vnode) {
+			var path = vnode.attributes.path,
+			    matches = exec(url, path, vnode.attributes);
+			if (matches) {
+				if (invoke !== false) {
+					var newProps = { url: url, matches: matches };
+					// copy matches onto props
+					for (var i in matches) {
+						if (matches.hasOwnProperty(i)) {
+							newProps[i] = matches[i];
+						}
+					}
+					return cloneElement(vnode, newProps);
+				}
+				return vnode;
+			}
+			return false;
+		}).filter(Boolean);
+	};
+
+	Router.prototype.render = function render$$1(_ref, _ref2) {
+		var children = _ref.children,
+		    onChange = _ref.onChange;
+		var url = _ref2.url;
+
+		var active = this.getMatchingChildren(children, url, true);
+
+		var current = active[0] || null;
+		this._didRoute = !!current;
+
+		var previous = this.previousUrl;
+		if (url !== previous) {
+			this.previousUrl = url;
+			if (typeof onChange === 'function') {
+				onChange({
+					router: this,
+					url: url,
+					previous: previous,
+					active: active,
+					current: current
+				});
+			}
+		}
+
+		return current;
+	};
+
+	return Router;
+}(Component);
+
+var Route = function Route(props) {
+	return h(props.component, props);
+};
+
+Router.route = route;
+Router.Router = Router;
+Router.Route = Route;
+Router.Link = Link;
+
+
+//# sourceMappingURL=preact-router.es.js.map
+
 var Socket = function Socket(config) {
   var this$1 = this;
 
@@ -1101,6 +1456,482 @@ Socket.prototype.error = function error (err) {
   console.log(err);
 };
 
+var keys = {
+  W: 87,
+  S: 83,
+  A: 65,
+  D: 68,
+  UP: 38,
+  DOWN: 40,
+  SHIFT: 16
+};
+
+var ListenKeys = function ListenKeys() {
+  this.keys = {};
+  this.keymap = keys;
+  this.listenKeys(this.keys);
+};
+
+ListenKeys.prototype.on = function on (key, callback) {
+  if (this.keys[key]) {
+    callback();
+  } else {
+    return false;
+  }
+};
+
+ListenKeys.prototype.listenKeys = function listenKeys (keys$$1) {
+  var keysPressed = function (e) {
+    keys$$1[e.keyCode] = true;
+  };
+
+  var keysReleased = function (e) {
+    keys$$1[e.keyCode] = false;
+  };
+
+  window.onkeydown = keysPressed;
+  window.onkeyup = keysReleased;
+};
+
+var Bullet = function Bullet(params) {
+  this.bullet = new PIXI.Sprite.fromFrame("bullet");
+  this.bullet.rotation = params.weapon.rotation;
+  this.bullet.speed = 5;
+  this.bullet.delay = 300;
+  this.bullet.ammo = 60;
+  this.bullet.range = 600;
+  this.bullet.reload = 2000;
+  this.bullet.pos = params.pos;
+  if (params.pos === "L") {
+    this.bullet.scale.x = -1;
+    this.bullet.x = params.x + Math.sin(params.weapon.rotation) * 40;
+    this.bullet.y = params.y + Math.cos(params.weapon.rotation) * 20;
+  } else {
+    this.bullet.scale.x = 1;
+    this.bullet.x = params.x + Math.cos(params.weapon.rotation) * 30;
+    this.bullet.y = params.y + Math.sin(params.weapon.rotation) * 20;
+  }
+  return this.bullet;
+};
+
+var Player = function Player(params) {
+  this.player = new PIXI.Sprite.fromFrame(params.value.skin);
+  this.player.pos = params.pos;
+  this.player.anchor.x = 0.5;
+  this.player.anchor.y = 0.5;
+  return this.player;
+};
+
+var Weapon = function Weapon(params) {
+  this.weapon = new PIXI.Sprite.fromFrame(params.value.weapon.skin);
+  this.weapon.x = 5;
+  this.weapon.y = 5;
+  this.weapon.rotation = params.value.weapon.rotation;
+  this.weapon.anchor.set(0.7, 0.5);
+  return this.weapon;
+};
+
+var Render$1 = function Render(config) {
+  this.renderer = new PIXI.WebGLRenderer(config.width, config.height);
+  this.renderer.backgroundColor = 0x061639;
+  this.config = config;
+  this.keys = new ListenKeys();
+  this.run = this.run.bind(this);
+  this.world = new PIXI.Container();
+  this.stage = new PIXI.Container();
+  this.background = new PIXI.Container();
+  this.world.addChild(this.background);
+  this.world.addChild(this.stage);
+  document.getElementById("gameWindow").appendChild(this.renderer.view);
+};
+
+Render$1.prototype.getPlayer = function getPlayer (player) {
+    if ( player === void 0 ) player = this.player;
+
+  return this.stage.children.filter(function (item) { return item.id === player; })[0];
+};
+
+Render$1.prototype.findDeletedPlayer = function findDeletedPlayer (id) {
+  var leftPlayer = this.getPlayer(id);
+  this.stage.removeChild(leftPlayer);
+};
+
+Render$1.prototype.addPlayer = function addPlayer (player) {
+  var PlayerModel = new PIXI.Container();
+  var PlayerWorm = new Player(player);
+  var PlayerWeapon = new Weapon(player);
+  PlayerModel.pos = player.value.pos;
+  PlayerModel.x = player.value.x;
+  PlayerModel.x = player.value.y;
+  PlayerModel.addChild(PlayerWorm);
+  PlayerModel.addChild(PlayerWeapon);
+  PlayerModel.id = player.key;
+  PlayerModel.zOrder = 5;
+  this.stage.addChild(PlayerModel);
+};
+
+Render$1.prototype.addBackground = function addBackground (config) {
+  var backgroundIMG = new PIXI.Sprite(
+    PIXI.loader.resources['background'].texture
+  );
+  backgroundIMG.width = window.innerWidth;
+  backgroundIMG.height = window.innerHeight;
+  this.background.addChild(backgroundIMG);
+};
+
+Render$1.prototype.loadResources = function loadResources (resources) {
+  resources.forEach(function (resource) {
+    PIXI.loader.add(resource.key, resource.src);
+  });
+};
+
+Render$1.prototype.run = function run () {
+  requestAnimationFrame(this.run);
+  this.renderer.render(this.world);
+};
+
+var Physics = function Physics() {
+  this.container = new p2.World({
+    gravity: [0, 5.82]
+  });
+  this.polygons = new Map();
+};
+
+Physics.prototype.addModel = function addModel (model) {
+  this.container.addBody(model);
+};
+
+Physics.prototype.addPlayer = function addPlayer (player) {
+  var polygonBody = new p2.Body({
+    mass: 3,
+    position: [player.value.x, player.value.y],
+    fixedRotation: true,
+    velocity: [5, 0]
+  });
+  polygonBody.id = player.key;
+  polygonBody.pos = player.value.pos;
+  polygonBody.weapon = player.value.weapon;
+  polygonBody.fromPolygon(this.polygons.get("worm"));
+  this.addModel(polygonBody);
+};
+
+Physics.prototype.updatePosition = function updatePosition (player) {
+  var currentPlayer = this.getModel(player.key);
+  currentPlayer.position[0] = player.value.x;
+  currentPlayer.position[1] = player.value.y;
+  currentPlayer.weapon = player.value.weapon;
+  currentPlayer.pos = player.value.pos;
+  return {
+    x: currentPlayer.position[0],
+    y: currentPlayer.position[1],
+    weapon: currentPlayer.weapon
+  };
+};
+
+Physics.prototype.setPolygon = function setPolygon (id, polygon) {
+  this.polygons.set(id, polygon);
+};
+
+Physics.prototype.getModel = function getModel (id) {
+  return this.container.bodies.filter(function (item) { return item.id === id; })[0];
+};
+
+var loadModels = function (data, stage, physics) {
+  var row = 0;
+  var colHeight = data.height / data.tilesGrid;
+  var colWidth = data.width / data.tilesWidth;
+  var groundLevel = window.innerHeight;
+  data.tilesMap.forEach(function (item, index) {
+    var Sprite = new PIXI.Sprite.fromFrame(("" + (item.tile)));
+    var SpriteCount = item.x.to !== item.x.from
+      ? Math.floor((item.x.to - item.x.from) / Sprite.width)
+      : 1;
+
+    for (var i = 0; i < SpriteCount; i++) {
+      var newSprite = new PIXI.Sprite.fromFrame(("" + (item.tile)));
+      if (item.y.from !== item.y.to) {
+        newSprite.y = window.innerHeight -
+          Sprite.height -
+          item.y.from -
+          (Sprite.height * i - 3);
+      } else {
+        newSprite.y = window.innerHeight - Sprite.height - item.y.from;
+      }
+      if (item.x.from === item.x.to) {
+        newSprite.x = item.x.from;
+      } else {
+        newSprite.x = item.x.from + (Sprite.width * i - 3);
+      }
+      stage.addChild(newSprite);
+    }
+    if (item.polygon) {
+      var polygonY = window.innerHeight - item.polygon.y;
+      var polygonBody = new p2.Body({
+        position: [item.polygon.x, polygonY]
+      });
+      polygonBody.fromPolygon(item.polygon.map);
+      physics.addModel(polygonBody);
+    }
+  });
+};
+
+var Gamefield$$1 = function Gamefield$$1(renderer, physics) {
+  this.player = null;
+  this.renderer = renderer;
+  this.physics = physics;
+  this.actions = new Actions(renderer.stage);
+};
+
+Gamefield$$1.prototype.update = function update (data) {
+    var this$1 = this;
+
+  data.forEach(function (player) {
+    var playerData = this$1.renderer.getPlayer(player.key);
+    if (!playerData) {
+      // Server sends more players, than client has online
+      this$1.addPlayer(player);
+    } else {
+      //Player has turned
+      if (player.value.pos !== playerData.pos) {
+        this$1.actions.playerTurn(playerData, player.value);
+      }
+      playerData.pos = player.value.pos;
+      //update renderer stats based on server values
+      var physicsPos = this$1.physics.updatePosition(player);
+      playerData.position.x = physicsPos.x;
+      playerData.position.y = physicsPos.y;
+      playerData.children[1].rotation = physicsPos.weapon.rotation;
+    }
+    if (player.value.shot) {
+      this$1.actions.shoot(JSON.parse(player.value.shot));
+    }
+  });
+};
+
+Gamefield$$1.prototype.addPlayer = function addPlayer (player) {
+  this.physics.addPlayer(player);
+  this.renderer.addPlayer(player);
+  var playerData = this.renderer.getPlayer(player.key);
+  if (playerData) {
+    this.actions.playerTurn(playerData, player.value);
+  }
+};
+
+Gamefield$$1.prototype.initialize = function initialize (data) {
+    var this$1 = this;
+
+  return new Promise(function (resolve) {
+    this$1.player = data.currentPlayer;
+    PIXI.loader.load(function () {
+      data.payload.forEach(function (player) {
+        this$1.addPlayer(player);
+      });
+      this$1.renderer.addBackground();
+      loadModels(data.currentMap, this$1.renderer.stage, this$1.physics);
+      this$1.renderer.run();
+      resolve();
+    });
+  });
+};
+
+var Actions = function Actions(stage) {
+  this.shots = new Map();
+  this.stage = stage;
+};
+
+Actions.prototype.shoot = function shoot (stats) {
+  var bullet = new Bullet(stats);
+  bullet.uuid = PIXI.utils.uuid();
+  this.shots.set(bullet.uuid, bullet);
+  this.stage.addChild(bullet);
+};
+
+Actions.prototype.playerTurn = function playerTurn (model, values) {
+  var gun = model.children[1], worm = model.children[0];
+  if (values.pos === 'L') {
+    worm.scale.x = 1;
+    gun.scale.x = 1;
+    gun.x = -5;
+  } else if (values.pos === 'R') {
+    worm.scale.x = -1;
+    gun.scale.x = -1;
+    gun.x = 5;
+  }
+};
+
+var renderConfig = {
+  width: window.innerWidth,
+  height: window.innerHeight - 10
+};
+
+var renderer = new Render$1(renderConfig);
+var physics = new Physics();
+
+var gamefield = new Gamefield$$1(renderer, physics);
+var key = renderer.keys.keymap;
+
+var timeouts = {
+  jump: { value: false, time: 1500 },
+  shoot: { value: false, time: 200 }
+};
+
+var Game = function Game(socket, player) {
+  this.socket = socket;
+  this.handleConnection();
+};
+
+Game.prototype.handleConnection = function handleConnection () {
+  this.socket.connection.onmessage = function (data) {
+    var response = JSON.parse(data.data);
+    switch (response.type) {
+      case "init":
+        var resources = [
+          { key: "skin", src: response.currentSkin.objects },
+          { key: "background", src: response.currentMap.background },
+          { key: "mapObjects", src: response.currentMap.objects },
+          { key: "tiles", src: response.currentMap.tiles }
+        ];
+        physics.setPolygon("worm", response.currentSkin.polygon);
+        renderer.stage.width = response.width;
+        renderer.stage.height = response.height;
+        renderer.loadResources(resources);
+
+        gamefield.initialize(response).then(function () {
+          socket.send({
+            type: "ready"
+          });
+        });
+        break;
+      case "update":
+        gamefield.update(response.payload);
+        break;
+      case "disconnect":
+        renderer.findDeletedPlayer(response.payload);
+        break;
+    }
+  };
+};
+
+Game.prototype.addPlayerToServer = function addPlayerToServer (player, server) {
+  this.socket.send({
+    type: "addPlayer",
+    player: player,
+    serverId: server
+  });
+};
+
+Game.prototype.startServer = function startServer (server) {
+  this.socket.send({
+    type: "startServer",
+    server: server
+  });
+};
+
+var animations = function (currentPlayer) {
+  var stats = {
+    player: gamefield.player,
+    y: currentPlayer.position[1],
+    x: currentPlayer.position[0],
+    pos: currentPlayer.pos,
+    weapon: {
+      rotation: currentPlayer.weapon.rotation
+    },
+    shot: null
+  };
+
+  renderer.keys.on(key.W, function () {
+    if (!timeouts.jump.value) {
+      currentPlayer.velocity[1] = -70;
+      if (stats.pos === "R") {
+        currentPlayer.velocity[0] = 10;
+      } else {
+        currentPlayer.velocity[0] = -10;
+      }
+      timeouts.jump.value = true;
+      setTimeout(
+        function () {
+          timeouts.jump.value = false;
+        },
+        timeouts.jump.time
+      );
+    }
+  });
+
+  renderer.keys.on(key.A, function () {
+    stats.x -= 3;
+    stats.pos = "L";
+  });
+
+  renderer.keys.on(key.D, function () {
+    stats.x += 3;
+    stats.pos = "R";
+  });
+
+  renderer.keys.on(key.UP, function () {
+    if (stats.pos === "R") {
+      stats.weapon.rotation -= 0.1;
+    } else {
+      stats.weapon.rotation += 0.1;
+    }
+  });
+
+  renderer.keys.on(key.DOWN, function () {
+    if (stats.pos === "R") {
+      stats.weapon.rotation += 0.1;
+    } else {
+      stats.weapon.rotation -= 0.1;
+    }
+  });
+
+  renderer.keys.on(key.SHIFT, function () {
+    if (!timeouts.shoot.value) {
+      stats.shot = JSON.stringify(stats);
+      timeouts.shoot.value = true;
+      setTimeout(
+        function () {
+          timeouts.shoot.value = false;
+        },
+        timeouts.shoot.time
+      );
+    }
+  });
+
+  socket.send({
+    type: "update",
+    stats: stats
+  });
+};
+
+PIXI.ticker.shared.add(function () {
+  var model = physics.getModel(gamefield.player);
+  physics.container.step(1 / 5);
+  if (model) {
+    renderer.stage.pivot.x = model.position[0] - window.innerWidth / 2;
+    animations(model);
+  }
+
+  gamefield.actions.shots.forEach(function (bullet) {
+    if (bullet.pos === "R") {
+      bullet.x += Math.cos(bullet.rotation) * bullet.speed;
+      bullet.y += Math.sin(bullet.rotation) * bullet.speed;
+    } else {
+      bullet.x -= Math.cos(bullet.rotation) * bullet.speed;
+      bullet.y -= Math.sin(bullet.rotation) * bullet.speed;
+    }
+    if (
+      bullet.x - model.position[0] > bullet.range ||
+      bullet.x - model.position[0] < -bullet.range ||
+      bullet.x === 0 ||
+      bullet.y - model.position[1] > bullet.range ||
+      bullet.y - model.position[1] < -bullet.range ||
+      bullet.y === 0
+    ) {
+      renderer.stage.removeChild(bullet);
+      gamefield.actions.shots.delete(bullet.uuid);
+    }
+  });
+});
+
 var socketConfig = {
   url: "ws://localhost:3000"
 };
@@ -1111,7 +1942,10 @@ var UX = (function (Component$$1) {
 
     Component$$1.call(this);
     this.socket = new Socket(socketConfig);
+    this.player = "player" + (Math.floor(Math.random() * ( 5 - 1 + 1) + 100));
+    this.game = new Game(this.socket, this.player);
     this.state = { servers: [] };
+
     this.socket.connection.onmessage = function (data) {
       var response = JSON.parse(data.data);
       if (response.type === "serversInfo") {
@@ -1124,15 +1958,22 @@ var UX = (function (Component$$1) {
   UX.prototype = Object.create( Component$$1 && Component$$1.prototype );
   UX.prototype.constructor = UX;
 
+  UX.prototype.joinServer = function joinServer (data) {
+    this.game.addPlayerToServer(this.player, data);
+  };
+
   UX.prototype.render = function render$$1 () {
+    var this$1 = this;
+
     return (
-      h( 'div', { id: "server-list" }, 
+      h( 'div', { id: "server-list" },
         this.state.servers.map(function (server) {
           return (
-            h( 'div', { className: "server-list-item" }, 
-              h( 'span', null, server.name ), 
-              h( 'span', null, server.map ), 
-              h( 'span', null, server.online )
+            h( 'div', { className: "server-list-item" },
+              h( 'span', null, ("Name: " + (server.name)) ),
+              h( 'span', null, ("Map: " + (server.map)) ),
+              h( 'span', null, ("Online: " + (server.online)) ),
+              h( 'button', { onClick: this$1.joinServer.bind(this$1, server.id) }, "Join")
             )
           );
         })
@@ -1143,6 +1984,48 @@ var UX = (function (Component$$1) {
   return UX;
 }(Component));
 
-render(h( UX, null ), document.getElementById("UX"));
+var Login = (function (Component$$1) {
+  function Login() {
+    Component$$1.call(this);
+  }
+
+  if ( Component$$1 ) Login.__proto__ = Component$$1;
+  Login.prototype = Object.create( Component$$1 && Component$$1.prototype );
+  Login.prototype.constructor = Login;
+
+  Login.prototype.render = function render$$1 () {
+    return (
+      h( 'div', { id: "login-page" },
+          h( 'h2', null, "Login" )
+      )
+    );
+  };
+
+  return Login;
+}(Component));
+
+var Routes = (function (Component$$1) {
+  function Routes() {
+    Component$$1.call(this);
+  }
+
+  if ( Component$$1 ) Routes.__proto__ = Component$$1;
+  Routes.prototype = Object.create( Component$$1 && Component$$1.prototype );
+  Routes.prototype.constructor = Routes;
+  Routes.prototype.render = function render$$1 () {
+    return (
+      h( 'section', { id: "container" },
+        h( Router, null,
+          h( Login, { path: "/" }),
+          h( UX, { path: "/servers" })
+        )
+      )
+    );
+  };
+
+  return Routes;
+}(Component));
+
+render(h( Routes, null ), document.getElementById("UX"));
 
 }());

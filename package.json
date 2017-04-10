@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "set NODE_ENV=development && rollup --watch --config ./config.js",
-    "build": "set NODE_ENV=production && rollup --config ./config.js",
+    "build": "export NODE_ENV=production && rollup --config ./config.js",
     "server": "node ./server/index.js"
   },
   "keywords": [
@@ -19,6 +19,7 @@
     "express": "^4.14.1",
     "pixi.js": "^4.3.4",
     "preact": "^7.2.1",
+    "preact-router": "^2.4.4",
     "rollup": "latest",
     "rollup-plugin-buble": "^0.15.0",
     "rollup-plugin-commonjs": "^6.0.0",

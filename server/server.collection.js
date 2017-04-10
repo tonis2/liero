@@ -14,7 +14,7 @@ class GameServer {
   }
 
   addPlayer(player, connection) {
-    const currentPlayer = players.createPlayer();
+    const currentPlayer = this.players.createPlayer();
     this.connections.set(currentPlayer, connection);
     this.online += 1;
 

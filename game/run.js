@@ -51,11 +51,11 @@ export default class Game {
     };
   }
 
-  addPlayerToServer(server, player) {
+  addPlayerToServer(player, server) {
     this.socket.send({
       type: "addPlayer",
       player: player,
-      server: server
+      serverId: server
     });
   }
 

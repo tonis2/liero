@@ -10,15 +10,18 @@ serverList.forEach(server => {
 });
 
 wss.on("connection", ws => {
+
   ws.send(
     JSON.stringify({ type: "serversInfo", payload: [...GameList.values()] })
   );
 
   ws.on("message", message => {
     const data = JSON.parse(message);
-    const server = GameList.get(data.GameServerId);
+
+    const server = GameList.get(data.serverId);
+
     if (data.type === "update") {
-      players.update(data.stats);
+      server.players.update(data.stats);
     }
 
     if (data.type === "ready") {
