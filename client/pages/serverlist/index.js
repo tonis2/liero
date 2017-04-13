@@ -2,15 +2,12 @@ import "./list.scss";
 import { h, Component } from "preact";
 import Socket from "../../helpers/sockets";
 import Game from '../../../game/run.js';
-
-const socketConfig = {
-  url: "ws://localhost:3000"
-};
+import { route } from 'preact-router';
 
 export default class UX extends Component {
   constructor() {
     super();
-    this.socket = new Socket(socketConfig);
+    this.socket = new Socket();
     this.player = `player${Math.floor(Math.random() * ( 5 - 1 + 1) + 100)}`;
     this.game = new Game(this.socket, this.player);
     this.state = { servers: [] };
@@ -23,8 +20,9 @@ export default class UX extends Component {
     };
   }
 
-  joinServer(data) {
-    this.game.addPlayerToServer(this.player, data);
+  joinServer(uid) {
+    this.game.addPlayerToServer(this.player, uid);
+    route({url:"/room", data:uid});
   }
 
   render() {

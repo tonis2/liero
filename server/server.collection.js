@@ -20,7 +20,7 @@ class GameServer {
 
     //Player has left
     connection.on("close", message => {
-      players.remove(currentPlayer);
+      this.players.remove(currentPlayer);
       this.connections.delete(currentPlayer);
       this.online -= 1;
       this.connections.forEach(socket => {

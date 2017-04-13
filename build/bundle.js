@@ -1439,7 +1439,7 @@ Router.Link = Link;
 var Socket = function Socket(config) {
   var this$1 = this;
 
-  this.connection = new WebSocket(config.url);
+  this.connection = new WebSocket("ws://localhost:8000");
   this.connection.onopen = function (msg) {
     console.log("Socket ready");
     this$1.ready = true;
@@ -1932,16 +1932,12 @@ PIXI.ticker.shared.add(function () {
   });
 });
 
-var socketConfig = {
-  url: "ws://localhost:3000"
-};
-
 var UX = (function (Component$$1) {
   function UX() {
     var this$1 = this;
 
     Component$$1.call(this);
-    this.socket = new Socket(socketConfig);
+    this.socket = new Socket();
     this.player = "player" + (Math.floor(Math.random() * ( 5 - 1 + 1) + 100));
     this.game = new Game(this.socket, this.player);
     this.state = { servers: [] };
@@ -1958,8 +1954,9 @@ var UX = (function (Component$$1) {
   UX.prototype = Object.create( Component$$1 && Component$$1.prototype );
   UX.prototype.constructor = UX;
 
-  UX.prototype.joinServer = function joinServer (data) {
-    this.game.addPlayerToServer(this.player, data);
+  UX.prototype.joinServer = function joinServer (uid) {
+    this.game.addPlayerToServer(this.player, uid);
+    route({url:"/room", data:uid});
   };
 
   UX.prototype.render = function render$$1 () {
@@ -1996,12 +1993,39 @@ var Login = (function (Component$$1) {
   Login.prototype.render = function render$$1 () {
     return (
       h( 'div', { id: "login-page" },
-          h( 'h2', null, "Login" )
+      h( 'h2', null, "Login" ),
+      h( 'span', { onClick: function () {route('/servers');} }, "Server list")
       )
     );
   };
 
   return Login;
+}(Component));
+
+var Room = (function (Component$$1) {
+  function Room(props) {
+    Component$$1.call(this);
+    this.props = props;
+    console.log(props);
+  }
+
+  if ( Component$$1 ) Room.__proto__ = Component$$1;
+  Room.prototype = Object.create( Component$$1 && Component$$1.prototype );
+  Room.prototype.constructor = Room;
+
+
+  Room.prototype.render = function render$$1 () {
+    return (
+      h( 'div', { id: "room-page" },
+      h( 'h2', null, "Room" ),
+      h( 'span', { onClick: (function () {
+        route({url:"/"});
+      }) }, "front page")
+      )
+    );
+  };
+
+  return Room;
 }(Component));
 
 var Routes = (function (Component$$1) {
@@ -2017,7 +2041,8 @@ var Routes = (function (Component$$1) {
       h( 'section', { id: "container" },
         h( Router, null,
           h( Login, { path: "/" }),
-          h( UX, { path: "/servers" })
+          h( UX, { path: "/servers" }),
+          h( Room, { path: "/room" })
         )
       )
     );

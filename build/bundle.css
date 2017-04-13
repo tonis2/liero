@@ -1,3 +1,11 @@
+#UX {
+  display: flex;
+  justify-content: center;
+  align-items: center; }
+
+#gameWindow canvas {
+  display: none; }
+
 #server-list {
   width: 600px;
   margin-top: 20vh;
@@ -16,11 +24,3 @@
     text-align: center;
     color: white;
     margin: 5px 0; }
-
-#UX {
-  display: flex;
-  justify-content: center;
-  align-items: center; }
-
-#gameWindow canvas {
-  display: none; }

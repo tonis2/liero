@@ -12,7 +12,8 @@ let plugins = [
   cjs({ include: ["node_modules/**"] }),
   npm({ jsnext: true, main: true, browser: true }),
   json(),
-  buble({ jsx: "h" })
+  buble({ jsx: "h" }),
+  replace({ "process.env.NODE_ENV": JSON.stringify("development") })
 ];
 if (production)
   plugins.push(

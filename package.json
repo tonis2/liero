@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "set NODE_ENV=development && rollup --watch --config ./config.js",
     "build": "export NODE_ENV=production && rollup --config ./config.js",
-    "server": "node ./server/index.js"
+    "server": " nodemon ./server/index.js | http-server ./"
   },
   "keywords": [
     "rolup",

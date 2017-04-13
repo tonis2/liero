@@ -1048,6 +1048,10 @@ pixi.js@^4.3.4:
     pixi-gl-core "^1.0.3"
     resource-loader "^2.0.4"
 
+preact-router@^2.4.4:
+  version "2.4.5"
+  resolved "https://registry.yarnpkg.com/preact-router/-/preact-router-2.4.5.tgz#48f0274c7cd56052257489269dafcfd6984763d8"
+
 preact@^7.2.1:
   version "7.2.1"
   resolved "https://registry.yarnpkg.com/preact/-/preact-7.2.1.tgz#159e1892f614985e49eb0a96fd6e6d8bdf8bbcc5"

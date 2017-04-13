@@ -1,4 +1,5 @@
 import { h, Component } from "preact";
+import { route } from "preact-router";
 
 export default class Login extends Component {
   constructor() {
@@ -8,7 +9,10 @@ export default class Login extends Component {
   render() {
     return (
       <div id="login-page">
-          <h2>Login</h2>
+      <h2>Login</h2>
+      <span onClick={() => {route('/servers')}}>
+            Server list
+          </span>
       </div>
     );
   }

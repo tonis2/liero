@@ -1,5 +1,5 @@
 const WebSocketServer = require("uws").Server;
-const wss = new WebSocketServer({ port: 3000 });
+const wss = new WebSocketServer({ port: 8000 });
 const serverList = require("./serverlist.json");
 const Game = require("./server.collection.js");
 const GameList = new Map();
@@ -44,5 +44,9 @@ wss.on("connection", ws => {
     if (data.type === "destroyServer") {
       GameList.delete(data.GameServerId);
     }
+  });
+
+  ws.on("close", message => {
+    
   });
 });
