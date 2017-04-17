@@ -16,53 +16,56 @@ const timeouts = {
 export default class Game {
   constructor(socket, player) {
     this.socket = socket;
-    this.handleConnection();
+    this.player = player;
+    gamefield.player = player;
   }
 
-  handleConnection() {
-    this.socket.connection.onmessage = data => {
-      const response = JSON.parse(data.data);
-      switch (response.type) {
-        case "init":
-          const resources = [
-            { key: "skin", src: response.currentSkin.objects },
-            { key: "background", src: response.currentMap.background },
-            { key: "mapObjects", src: response.currentMap.objects },
-            { key: "tiles", src: response.currentMap.tiles }
-          ];
-          physics.setPolygon("worm", response.currentSkin.polygon);
-          renderer.stage.width = response.width;
-          renderer.stage.height = response.height;
-          renderer.loadResources(resources);
+  handleConnection(response) {
+    switch (response.type) {
+      case "init":
+        console.log("Start loading resources");
+        document.getElementById("gameWindow").classList.add("active");
+        const resources = [
+          { key: "skin", src: response.currentSkin.objects },
+          { key: "background", src: response.currentMap.background },
+          { key: "mapObjects", src: response.currentMap.objects },
+          { key: "tiles", src: response.currentMap.tiles }
+        ];
+        physics.setPolygon("worm", response.currentSkin.polygon);
+        renderer.stage.width = response.width;
+        renderer.stage.height = response.height;
+        renderer.loadResources(resources);
 
-          gamefield.initialize(response).then(() => {
-            socket.send({
-              type: "ready"
-            });
+        gamefield.initialize(response).then(() => {
+          console.log("Files loaded");
+          this.socket.send({
+            type: "ready"
           });
-          break;
-        case "update":
-          gamefield.update(response.payload);
-          break;
-        case "disconnect":
-          renderer.findDeletedPlayer(response.payload);
-          break;
-      }
-    };
+        });
+        break;
+
+      case "update":
+        gamefield.update(response.payload);
+        break;
+
+      case "disconnect":
+        renderer.findDeletedPlayer(response.payload);
+        break;
+    }
   }
 
-  addPlayerToServer(player, server) {
+  addPlayerToServer(player, serverId) {
     this.socket.send({
       type: "addPlayer",
       player: player,
-      serverId: server
+      serverId: serverId
     });
   }
 
-  startServer(server) {
+  startServer(serverId) {
     this.socket.send({
       type: "startServer",
-      server: server
+      serverId: serverId
     });
   }
 }
@@ -88,12 +91,9 @@ const animations = currentPlayer => {
         currentPlayer.velocity[0] = -10;
       }
       timeouts.jump.value = true;
-      setTimeout(
-        () => {
-          timeouts.jump.value = false;
-        },
-        timeouts.jump.time
-      );
+      setTimeout(() => {
+        timeouts.jump.value = false;
+      }, timeouts.jump.time);
     }
   });
 
@@ -127,12 +127,9 @@ const animations = currentPlayer => {
     if (!timeouts.shoot.value) {
       stats.shot = JSON.stringify(stats);
       timeouts.shoot.value = true;
-      setTimeout(
-        () => {
-          timeouts.shoot.value = false;
-        },
-        timeouts.shoot.time
-      );
+      setTimeout(() => {
+        timeouts.shoot.value = false;
+      }, timeouts.shoot.time);
     }
   });
 

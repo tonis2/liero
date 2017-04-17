@@ -9,4 +9,9 @@
   canvas {
         display: none;
   }
+  &.active {
+    canvas {
+      display: block;
+    }
+  }
 }

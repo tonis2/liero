@@ -31,10 +31,9 @@ class Players {
     this.collection.set(payload.player, new worm(payload));
   }
 
-  createPlayer() {
-    const id = uuidV1(), key = `worm${id}`;
-    this.add(key, new worm());
-    return key;
+  createPlayer(playerID) {
+    this.add(playerID, new worm());
+    return playerID;
   }
 }
 

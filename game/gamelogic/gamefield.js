@@ -44,7 +44,6 @@ export default class Gamefield {
 
   initialize(data) {
     return new Promise(resolve => {
-      this.player = data.currentPlayer;
       PIXI.loader.load(() => {
         data.payload.forEach(player => {
           this.addPlayer(player);

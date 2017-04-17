@@ -1,22 +1,37 @@
+import "./room.scss";
 import { h, Component } from "preact";
 import { route } from "preact-router";
+import { observer, setComponent } from "mobx-observer";
+import store from "../../store";
 
-export default class Room extends Component {
-  constructor(props) {
-    super();
-    this.props = props;
-    console.log(props);
+setComponent(Component);
+class Room extends Component {
+  startGame() {
+    store.startGame();
+    route({ url: "/serverlist" });
   }
 
+  componentWillMount() {
+    if (!store.state.currentserver) route("/");
+  }
+
+  componentDidUnmount() {
+    store.state.currentserver = null;
+  }
 
   render() {
     return (
       <div id="room-page">
-      <h2>Room</h2>
-      <span onClick={(() => {
-        route({url:"/"})
-      })}>front page</span>
+        <section id="room-details">
+          <h3>{store.state.currentserver.name}</h3>
+          {store.state.currentserver.players.map(player => {
+            return <span> {player.key}</span>;
+          })}
+        </section>
+        <span onClick={this.startGame}>Start Game!</span>
       </div>
     );
   }
 }
+
+export default observer(Room);

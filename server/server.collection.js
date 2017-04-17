@@ -14,7 +14,7 @@ class GameServer {
   }
 
   addPlayer(player, connection) {
-    const currentPlayer = this.players.createPlayer();
+    const currentPlayer = this.players.createPlayer(player);
     this.connections.set(currentPlayer, connection);
     this.online += 1;
 
@@ -37,7 +37,6 @@ class GameServer {
         JSON.stringify({
           type: "init",
           payload: this.players.getPlayers(),
-          currentPlayer: currentPlayer,
           currentMap: map[0][this.map],
           currentSkin: skin[0].default
         })
@@ -46,16 +45,24 @@ class GameServer {
   }
 
   //Constantly send updates about player movements
-  startUpdates(playerID) {
-    const connection = this.connections.get(playerID);
-    setInterval(
-      () => {
+  startUpdates() {
+    this.connections.forEach(connection => {
+      setInterval(() => {
         connection.send(
           JSON.stringify({ type: "update", payload: this.players.getPlayers() })
         );
-      },
-      20
-    );
+      }, 20);
+    });
+  }
+
+  stringifyData() {
+    return {
+      name: this.name,
+      id: this.id,
+      online: this.online,
+      map: this.map,
+      players: this.players.getPlayers()
+    };
   }
 }
 module.exports = GameServer;

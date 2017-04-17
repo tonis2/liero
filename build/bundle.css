@@ -6,6 +6,9 @@
 #gameWindow canvas {
   display: none; }
 
+#gameWindow.active canvas {
+  display: block; }
+
 #server-list {
   width: 600px;
   margin-top: 20vh;
@@ -24,3 +27,18 @@
     text-align: center;
     color: white;
     margin: 5px 0; }
+
+#room-page {
+  display: flex;
+  flex-flow: column;
+  justify-content: center;
+  margin: 0 auto;
+  width: 60vw; }
+  #room-page #room-details {
+    width: 100%;
+    display: flex;
+    flex-flow: column;
+    height: 600px;
+    background: green; }
+    #room-page #room-details h3 {
+      text-align: center; }

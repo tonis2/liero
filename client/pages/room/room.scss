@@ -1,0 +1,17 @@
+#room-page {
+display: flex;
+flex-flow: column;
+justify-content: center;
+margin:0 auto;
+width:60vw;
+#room-details {
+  width:100%;
+  display: flex;
+  flex-flow: column;
+  height:600px;
+  background: green;
+  h3 {
+    text-align: center;
+  }
+}
+}

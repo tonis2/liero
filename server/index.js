@@ -9,10 +9,27 @@ serverList.forEach(server => {
   GameList.set(GameServer.id, GameServer);
 });
 
-wss.on("connection", ws => {
+const sendToAllConnections = msg => {
+  GameList.forEach(socket => {
+    socket.connections.forEach(ws => {
+      ws.send(JSON.stringify(msg));
+    });
+  });
+};
 
+const getGamesData = () => {
+  const gameslist = [...GameList.values()];
+  return gameslist.map(game => {
+    return game.stringifyData();
+  });
+};
+
+wss.on("connection", ws => {
   ws.send(
-    JSON.stringify({ type: "serversInfo", payload: [...GameList.values()] })
+    JSON.stringify({
+      type: "serversInfo",
+      payload: getGamesData()
+    })
   );
 
   ws.on("message", message => {
@@ -35,6 +52,19 @@ wss.on("connection", ws => {
 
     if (data.type === "addPlayer") {
       server.addPlayer(data.player, ws);
+
+      sendToAllConnections({
+        type: "serversInfo",
+        payload: getGamesData()
+      });
+    }
+
+    if (data.type === "removePlayer") {
+      server.removePlayer(data.player, ws);
+      sendToAllConnections({
+        type: "serversInfo",
+        payload: getGamesData()
+      });
     }
 
     if (data.type === "startServer") {
@@ -44,9 +74,5 @@ wss.on("connection", ws => {
     if (data.type === "destroyServer") {
       GameList.delete(data.GameServerId);
     }
-  });
-
-  ws.on("close", message => {
-    
   });
 });

@@ -1,5 +1,5 @@
-import KeyListener from '../helpers/keylistener';
-import { Player, Weapon, Bullet } from '../models';
+import KeyListener from "../helpers/keylistener";
+import { Player, Weapon, Bullet } from "../models";
 
 export default class Render {
   constructor(config) {
@@ -41,7 +41,7 @@ export default class Render {
 
   addBackground(config) {
     const backgroundIMG = new PIXI.Sprite(
-      PIXI.loader.resources['background'].texture
+      PIXI.loader.resources["background"].texture
     );
     backgroundIMG.width = window.innerWidth;
     backgroundIMG.height = window.innerHeight;

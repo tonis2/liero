@@ -9,10 +9,14 @@ export default class Login extends Component {
   render() {
     return (
       <div id="login-page">
-      <h2>Login</h2>
-      <span onClick={() => {route('/servers')}}>
-            Server list
-          </span>
+        <h2>Login</h2>
+        <span
+          onClick={() => {
+            route("/servers");
+          }}
+        >
+          Server list
+        </span>
       </div>
     );
   }
