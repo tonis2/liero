@@ -6,7 +6,7 @@ class Store {
   constructor() {
     this.socket = new Socket();
     this.player = `player${Math.floor(Math.random() * (5 - 1 + 1) + 100)}`;
-    this.game = new Game(this.socket, this.player);
+    this.game = new Game(this.player);
     this.socket.connection.onmessage = data => {
       const response = JSON.parse(data.data);
 

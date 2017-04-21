@@ -1,6 +1,7 @@
 import { Renderer, Physics } from "./containers";
 import { Gamefield } from "./gamelogic";
 import { renderConfig } from "./helpers/configs";
+import store from "../client/store";
 
 const renderer = new Renderer(renderConfig);
 const physics = new Physics();
@@ -12,63 +13,6 @@ const timeouts = {
   jump: { value: false, time: 1500 },
   shoot: { value: false, time: 200 }
 };
-
-export default class Game {
-  constructor(socket, player) {
-    this.socket = socket;
-    this.player = player;
-    gamefield.player = player;
-  }
-
-  handleConnection(response) {
-    switch (response.type) {
-      case "init":
-        console.log("Start loading resources");
-        document.getElementById("gameWindow").classList.add("active");
-        const resources = [
-          { key: "skin", src: response.currentSkin.objects },
-          { key: "background", src: response.currentMap.background },
-          { key: "mapObjects", src: response.currentMap.objects },
-          { key: "tiles", src: response.currentMap.tiles }
-        ];
-        physics.setPolygon("worm", response.currentSkin.polygon);
-        renderer.stage.width = response.width;
-        renderer.stage.height = response.height;
-        renderer.loadResources(resources);
-
-        gamefield.initialize(response).then(() => {
-          console.log("Files loaded");
-          this.socket.send({
-            type: "ready"
-          });
-        });
-        break;
-
-      case "update":
-        gamefield.update(response.payload);
-        break;
-
-      case "disconnect":
-        renderer.findDeletedPlayer(response.payload);
-        break;
-    }
-  }
-
-  addPlayerToServer(player, serverId) {
-    this.socket.send({
-      type: "addPlayer",
-      player: player,
-      serverId: serverId
-    });
-  }
-
-  startServer(serverId) {
-    this.socket.send({
-      type: "startServer",
-      serverId: serverId
-    });
-  }
-}
 
 const animations = currentPlayer => {
   let stats = {
@@ -133,38 +77,98 @@ const animations = currentPlayer => {
     }
   });
 
-  socket.send({
+  store.socket.send({
     type: "update",
+    serverId: store.state.currentserver.id,
     stats
   });
 };
 
-PIXI.ticker.shared.add(() => {
-  const model = physics.getModel(gamefield.player);
-  physics.container.step(1 / 5);
-  if (model) {
-    renderer.stage.pivot.x = model.position[0] - window.innerWidth / 2;
-    animations(model);
+export default class Game {
+  constructor(player) {
+    gamefield.player = player;
   }
 
-  gamefield.actions.shots.forEach(bullet => {
-    if (bullet.pos === "R") {
-      bullet.x += Math.cos(bullet.rotation) * bullet.speed;
-      bullet.y += Math.sin(bullet.rotation) * bullet.speed;
-    } else {
-      bullet.x -= Math.cos(bullet.rotation) * bullet.speed;
-      bullet.y -= Math.sin(bullet.rotation) * bullet.speed;
+  handleConnection(response) {
+    switch (response.type) {
+      case "init":
+        console.log("Start loading resources");
+        document.getElementById("gameWindow").classList.add("active");
+        const resources = [
+          { key: "skin", src: response.currentSkin.objects },
+          { key: "background", src: response.currentMap.background },
+          { key: "mapObjects", src: response.currentMap.objects },
+          { key: "tiles", src: response.currentMap.tiles }
+        ];
+        physics.setPolygon("worm", response.currentSkin.polygon);
+        renderer.stage.width = response.width;
+        renderer.stage.height = response.height;
+        renderer.loadResources(resources);
+
+        gamefield.initialize(response).then(() => {
+          console.log("Files loaded");
+          store.socket.send({
+            type: "ready",
+            serverId: store.state.currentserver.id
+          });
+          this.startAnimations();
+        });
+        break;
+
+      case "update":
+        gamefield.update(response.payload);
+        break;
+
+      case "disconnect":
+        renderer.findDeletedPlayer(response.payload);
+        break;
     }
-    if (
-      bullet.x - model.position[0] > bullet.range ||
-      bullet.x - model.position[0] < -bullet.range ||
-      bullet.x === 0 ||
-      bullet.y - model.position[1] > bullet.range ||
-      bullet.y - model.position[1] < -bullet.range ||
-      bullet.y === 0
-    ) {
-      renderer.stage.removeChild(bullet);
-      gamefield.actions.shots.delete(bullet.uuid);
-    }
-  });
-});
+  }
+
+  addPlayerToServer(player, serverId) {
+    store.socket.send({
+      type: "addPlayer",
+      player: player,
+      serverId: serverId
+    });
+  }
+
+  startServer() {
+    store.socket.send({
+      type: "startServer",
+      serverId: store.state.currentserver.id
+    });
+  }
+
+  startAnimations() {
+    PIXI.ticker.shared.add(() => {
+      const model = physics.getModel(store.player);
+      physics.container.step(1 / 5);
+      if (model) {
+        renderer.stage.pivot.x = model.position[0] - window.innerWidth / 2;
+        animations(model);
+      }
+
+      gamefield.actions.shots.forEach(bullet => {
+        if (bullet.pos === "R") {
+          bullet.x += Math.cos(bullet.rotation) * bullet.speed;
+          bullet.y += Math.sin(bullet.rotation) * bullet.speed;
+        } else {
+          bullet.x -= Math.cos(bullet.rotation) * bullet.speed;
+          bullet.y -= Math.sin(bullet.rotation) * bullet.speed;
+        }
+        if (
+          bullet.x - model.position[0] > bullet.range ||
+          bullet.x - model.position[0] < -bullet.range ||
+          bullet.x === 0 ||
+          bullet.y - model.position[1] > bullet.range ||
+          bullet.y - model.position[1] < -bullet.range ||
+          bullet.y === 0
+        ) {
+          renderer.stage.removeChild(bullet);
+          gamefield.actions.shots.delete(bullet.uuid);
+        }
+      });
+    });
+  }
+}

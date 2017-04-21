@@ -4820,63 +4820,6 @@ var timeouts = {
   shoot: { value: false, time: 200 }
 };
 
-var Game = function Game(socket, player) {
-  this.socket = socket;
-  this.player = player;
-  gamefield.player = player;
-};
-
-Game.prototype.handleConnection = function handleConnection (response) {
-    var this$1 = this;
-
-  switch (response.type) {
-    case "init":
-      console.log("Start loading resources");
-      document.getElementById("gameWindow").classList.add("active");
-      var resources = [
-        { key: "skin", src: response.currentSkin.objects },
-        { key: "background", src: response.currentMap.background },
-        { key: "mapObjects", src: response.currentMap.objects },
-        { key: "tiles", src: response.currentMap.tiles }
-      ];
-      physics.setPolygon("worm", response.currentSkin.polygon);
-      renderer.stage.width = response.width;
-      renderer.stage.height = response.height;
-      renderer.loadResources(resources);
-
-      gamefield.initialize(response).then(function () {
-        console.log("Files loaded");
-        this$1.socket.send({
-          type: "ready"
-        });
-      });
-      break;
-
-    case "update":
-      gamefield.update(response.payload);
-      break;
-
-    case "disconnect":
-      renderer.findDeletedPlayer(response.payload);
-      break;
-  }
-};
-
-Game.prototype.addPlayerToServer = function addPlayerToServer (player, serverId) {
-  this.socket.send({
-    type: "addPlayer",
-    player: player,
-    serverId: serverId
-  });
-};
-
-Game.prototype.startServer = function startServer (serverId) {
-  this.socket.send({
-    type: "startServer",
-    serverId: serverId
-  });
-};
-
 var animations = function (currentPlayer) {
   var stats = {
     player: gamefield.player,
@@ -4940,48 +4883,108 @@ var animations = function (currentPlayer) {
     }
   });
 
-  socket.send({
+  store.socket.send({
     type: "update",
+    serverId: store.state.currentserver.id,
     stats: stats
   });
 };
 
-PIXI.ticker.shared.add(function () {
-  var model = physics.getModel(gamefield.player);
-  physics.container.step(1 / 5);
-  if (model) {
-    renderer.stage.pivot.x = model.position[0] - window.innerWidth / 2;
-    animations(model);
-  }
+var Game = function Game(player) {
+  gamefield.player = player;
+};
 
-  gamefield.actions.shots.forEach(function (bullet) {
-    if (bullet.pos === "R") {
-      bullet.x += Math.cos(bullet.rotation) * bullet.speed;
-      bullet.y += Math.sin(bullet.rotation) * bullet.speed;
-    } else {
-      bullet.x -= Math.cos(bullet.rotation) * bullet.speed;
-      bullet.y -= Math.sin(bullet.rotation) * bullet.speed;
-    }
-    if (
-      bullet.x - model.position[0] > bullet.range ||
-      bullet.x - model.position[0] < -bullet.range ||
-      bullet.x === 0 ||
-      bullet.y - model.position[1] > bullet.range ||
-      bullet.y - model.position[1] < -bullet.range ||
-      bullet.y === 0
-    ) {
-      renderer.stage.removeChild(bullet);
-      gamefield.actions.shots.delete(bullet.uuid);
-    }
+Game.prototype.handleConnection = function handleConnection (response) {
+    var this$1 = this;
+
+  switch (response.type) {
+    case "init":
+      console.log("Start loading resources");
+      document.getElementById("gameWindow").classList.add("active");
+      var resources = [
+        { key: "skin", src: response.currentSkin.objects },
+        { key: "background", src: response.currentMap.background },
+        { key: "mapObjects", src: response.currentMap.objects },
+        { key: "tiles", src: response.currentMap.tiles }
+      ];
+      physics.setPolygon("worm", response.currentSkin.polygon);
+      renderer.stage.width = response.width;
+      renderer.stage.height = response.height;
+      renderer.loadResources(resources);
+
+      gamefield.initialize(response).then(function () {
+        console.log("Files loaded");
+        store.socket.send({
+          type: "ready",
+          serverId: store.state.currentserver.id
+        });
+        this$1.startAnimations();
+      });
+      break;
+
+    case "update":
+      gamefield.update(response.payload);
+      break;
+
+    case "disconnect":
+      renderer.findDeletedPlayer(response.payload);
+      break;
+  }
+};
+
+Game.prototype.addPlayerToServer = function addPlayerToServer (player, serverId) {
+  store.socket.send({
+    type: "addPlayer",
+    player: player,
+    serverId: serverId
   });
-});
+};
+
+Game.prototype.startServer = function startServer () {
+  store.socket.send({
+    type: "startServer",
+    serverId: store.state.currentserver.id
+  });
+};
+
+Game.prototype.startAnimations = function startAnimations () {
+  PIXI.ticker.shared.add(function () {
+    var model = physics.getModel(store.player);
+    physics.container.step(1 / 5);
+    if (model) {
+      renderer.stage.pivot.x = model.position[0] - window.innerWidth / 2;
+      animations(model);
+    }
+
+    gamefield.actions.shots.forEach(function (bullet) {
+      if (bullet.pos === "R") {
+        bullet.x += Math.cos(bullet.rotation) * bullet.speed;
+        bullet.y += Math.sin(bullet.rotation) * bullet.speed;
+      } else {
+        bullet.x -= Math.cos(bullet.rotation) * bullet.speed;
+        bullet.y -= Math.sin(bullet.rotation) * bullet.speed;
+      }
+      if (
+        bullet.x - model.position[0] > bullet.range ||
+        bullet.x - model.position[0] < -bullet.range ||
+        bullet.x === 0 ||
+        bullet.y - model.position[1] > bullet.range ||
+        bullet.y - model.position[1] < -bullet.range ||
+        bullet.y === 0
+      ) {
+        renderer.stage.removeChild(bullet);
+        gamefield.actions.shots.delete(bullet.uuid);
+      }
+    });
+  });
+};
 
 var Store = function Store() {
   var this$1 = this;
 
   this.socket = new Socket();
   this.player = "player" + (Math.floor(Math.random() * (5 - 1 + 1) + 100));
-  this.game = new Game(this.socket, this.player);
+  this.game = new Game(this.player);
   this.socket.connection.onmessage = function (data) {
     var response = JSON.parse(data.data);
 
@@ -5035,13 +5038,13 @@ var ServerList = (function (Component$$1) {
     var this$1 = this;
 
     return (
-      h( 'div', { id: "server-list" }, 
+      h( 'div', { id: "server-list" },
         store.state.serverlist.map(function (server) {
           return (
-            h( 'div', { className: "server-list-item" }, 
-              h( 'span', null, ("Name: " + (server.name)) ), 
-              h( 'span', null, ("Map: " + (server.map)) ), 
-              h( 'span', null, ("Online: " + (server.online)) ), 
+            h( 'div', { className: "server-list-item" },
+              h( 'span', null, ("Name: " + (server.name)) ),
+              h( 'span', null, ("Map: " + (server.map)) ),
+              h( 'span', null, ("Online: " + (server.online)) ),
               h( 'button', { onClick: this$1.joinServer.bind(this$1, server.id) }, "Join")
             )
           );
@@ -5066,8 +5069,8 @@ var Login = (function (Component$$1) {
 
   Login.prototype.render = function render$$1 () {
     return (
-      h( 'div', { id: "login-page" }, 
-        h( 'h2', null, "Login" ), 
+      h( 'div', { id: "login-page" },
+        h( 'h2', null, "Login" ),
         h( 'span', {
           onClick: function () {
             route("/servers");
@@ -5098,19 +5101,16 @@ var Room = (function (Component$$1) {
     if (!store.state.currentserver) { route("/"); }
   };
 
-  Room.prototype.componentDidUnmount = function componentDidUnmount () {
-    store.state.currentserver = null;
-  };
 
   Room.prototype.render = function render$$1 () {
     return (
-      h( 'div', { id: "room-page" }, 
-        h( 'section', { id: "room-details" }, 
-          h( 'h3', null, store.state.currentserver.name ), 
+      h( 'div', { id: "room-page" },
+        h( 'section', { id: "room-details" },
+          h( 'h3', null, store.state.currentserver.name ),
           store.state.currentserver.players.map(function (player) {
             return h( 'span', null, " ", player.key );
           })
-        ), 
+        ),
         h( 'span', { onClick: this.startGame }, "Start Game!")
       )
     );
@@ -5131,10 +5131,10 @@ var Routes = (function (Component$$1) {
   Routes.prototype.constructor = Routes;
   Routes.prototype.render = function render$$1 () {
     return (
-      h( 'section', { id: "container" }, 
-        h( Router, null, 
-          h( Login, { path: "/" }), 
-          h( Serverlist, { path: "/servers" }), 
+      h( 'section', { id: "container" },
+        h( Router, null,
+          h( Login, { path: "/" }),
+          h( Serverlist, { path: "/servers" }),
           h( Room$1, { path: "/room" })
         )
       )

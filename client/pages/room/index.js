@@ -15,9 +15,6 @@ class Room extends Component {
     if (!store.state.currentserver) route("/");
   }
 
-  componentDidUnmount() {
-    store.state.currentserver = null;
-  }
 
   render() {
     return (

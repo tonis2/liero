@@ -42,7 +42,7 @@ wss.on("connection", ws => {
     }
 
     if (data.type === "ready") {
-      GameServer.startUpdates(playerId);
+      server.startUpdates();
     }
 
     if (data.type === "createServer") {
