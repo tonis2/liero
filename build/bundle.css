@@ -1,17 +1,30 @@
 #UX {
   display: flex;
   justify-content: center;
-  align-items: center; }
+  align-items: center;
+  display: flex;
+  position: fixed;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  top: 10vh;
+  background: #1F160D;
+  width: 60vw;
+  min-height: 600px;
+  border-radius: 15px; }
 
 #gameWindow canvas {
   display: none; }
 
-#gameWindow.active canvas {
+.active #gameWindow canvas {
   display: block; }
+
+.active #UX {
+  display: none; }
 
 #server-list {
   width: 600px;
-  margin-top: 20vh;
+  margin-top: 5vh;
   background: lightblue;
   height: auto;
   display: flex;
@@ -28,6 +41,18 @@
     color: white;
     margin: 5px 0; }
 
+#login-page {
+  color: #EDDEAE; }
+  #login-page label {
+    margin-right: 5px; }
+  #login-page #login-submit {
+    width: 80px;
+    height: 20px;
+    background: #304B01;
+    text-align: center;
+    margin-top: 50px;
+    cursor: pointer; }
+
 #room-page {
   display: flex;
   flex-flow: column;
@@ -39,6 +64,20 @@
     display: flex;
     flex-flow: column;
     height: 600px;
-    background: green; }
+    margin-top: 5vh;
+    background: #EDDEAE;
+    color: #1F160D; }
     #room-page #room-details h3 {
       text-align: center; }
+    #room-page #room-details #players-list {
+      margin-left: 50px;
+      display: flex;
+      flex-flow: column; }
+  #room-page #start-game {
+    background: #5C5B13;
+    color: #EDDEAE;
+    width: 150px;
+    padding: 5px;
+    margin-top: 90px;
+    cursor: pointer;
+    margin-left: 50px; }

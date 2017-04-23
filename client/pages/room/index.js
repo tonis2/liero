@@ -15,17 +15,19 @@ class Room extends Component {
     if (!store.state.currentserver) route("/");
   }
 
-
   render() {
     return (
       <div id="room-page">
         <section id="room-details">
           <h3>{store.state.currentserver.name}</h3>
-          {store.state.currentserver.players.map(player => {
-            return <span> {player.key}</span>;
-          })}
+          <section id="players-list">
+            <h4>Players:</h4>
+            {store.state.currentserver.players.map(player => {
+              return <span> {player.key}</span>;
+            })}
+          </section>
+          <span id="start-game" onClick={this.startGame}>Start Game!</span>
         </section>
-        <span onClick={this.startGame}>Start Game!</span>
       </div>
     );
   }

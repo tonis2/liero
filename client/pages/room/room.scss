@@ -9,9 +9,25 @@ width:60vw;
   display: flex;
   flex-flow: column;
   height:600px;
-  background: green;
+  margin-top: 5vh;
+  background: $white;
+  color:$black;
   h3 {
     text-align: center;
   }
+  #players-list {
+    margin-left: 50px;
+    display: flex;
+    flex-flow: column;
+  }
+}
+#start-game {
+  background: $green2;
+  color:$white;
+  width:150px;
+  padding:5px;
+  margin-top: 90px;
+  cursor: pointer;
+  margin-left: 50px;
 }
 }

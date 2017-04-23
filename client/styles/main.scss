@@ -1,17 +1,31 @@
+@import "./settings.scss";
+
 #UX {
   display: flex;
   justify-content: center;
   align-items: center;
-
+  display: flex;
+  position: fixed;
+  left:0;
+  right:0;
+  margin:0 auto;
+  top:10vh;
+  background: $black;
+  width:60vw;
+  min-height:600px;
+  border-radius:15px;
 
 }
 #gameWindow {
   canvas {
         display: none;
   }
-  &.active {
-    canvas {
-      display: block;
-    }
+}
+.active {
+  #gameWindow  canvas {
+    display: block;
+  }
+  #UX {
+    display: none;
   }
 }

@@ -34,7 +34,6 @@ wss.on("connection", ws => {
 
   ws.on("message", message => {
     const data = JSON.parse(message);
-
     const server = GameList.get(data.serverId);
 
     if (data.type === "update") {
@@ -52,7 +51,6 @@ wss.on("connection", ws => {
 
     if (data.type === "addPlayer") {
       server.addPlayer(data.player, ws);
-
       sendToAllConnections({
         type: "serversInfo",
         payload: getGamesData()

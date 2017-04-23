@@ -17,7 +17,6 @@ class GameServer {
     const currentPlayer = this.players.createPlayer(player);
     this.connections.set(currentPlayer, connection);
     this.online += 1;
-
     //Player has left
     connection.on("close", message => {
       this.players.remove(currentPlayer);

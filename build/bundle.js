@@ -4808,17 +4808,15 @@ var renderConfig = {
   width: window.innerWidth,
   height: window.innerHeight - 10
 };
+var timeouts = {
+    jump: { value: false, time: 1500 },
+    shoot: { value: false, time: 200 }
+  };
 
 var renderer = new Render$1(renderConfig);
 var physics = new Physics();
-
 var gamefield = new Gamefield$$1(renderer, physics);
 var key = renderer.keys.keymap;
-
-var timeouts = {
-  jump: { value: false, time: 1500 },
-  shoot: { value: false, time: 200 }
-};
 
 var animations = function (currentPlayer) {
   var stats = {
@@ -4899,8 +4897,8 @@ Game.prototype.handleConnection = function handleConnection (response) {
 
   switch (response.type) {
     case "init":
-      console.log("Start loading resources");
-      document.getElementById("gameWindow").classList.add("active");
+      console.log("Start loading resources", response);
+      document.getElementsByTagName("body")[0].classList.add("active");
       var resources = [
         { key: "skin", src: response.currentSkin.objects },
         { key: "background", src: response.currentMap.background },
@@ -4983,11 +4981,15 @@ var Store = function Store() {
   var this$1 = this;
 
   this.socket = new Socket();
-  this.player = "player" + (Math.floor(Math.random() * (5 - 1 + 1) + 100));
-  this.game = new Game(this.player);
+  this.player = null;
+
+  this.state = mobx_18({
+    serverlist: [],
+    currentserver: null
+  });
+
   this.socket.connection.onmessage = function (data) {
     var response = JSON.parse(data.data);
-
     if (response.type === "serversInfo") {
       this$1.state.serverlist = response.payload;
       if (this$1.state.currentserver) {
@@ -4996,21 +4998,30 @@ var Store = function Store() {
         )[0];
       }
     }
-
-    this$1.game.handleConnection(response);
   };
-
-  this.state = mobx_18({
-    serverlist: [],
-    currentserver: null
-  });
 };
 
 Store.prototype.joinRoom = function joinRoom (serverUID) {
+    var this$1 = this;
+
+  this.game = new Game(this.player);
   this.game.addPlayerToServer(this.player, serverUID);
   this.state.currentserver = this.state.serverlist.filter(
     function (server) { return server.id === serverUID; }
   )[0];
+
+  this.socket.connection.onmessage = function (data) {
+    var response = JSON.parse(data.data);
+    if (response.type === "serversInfo") {
+      this$1.state.serverlist = response.payload;
+      if (this$1.state.currentserver) {
+        this$1.state.currentserver = this$1.state.serverlist.filter(
+          function (server) { return server.id === this$1.state.currentserver.id; }
+        )[0];
+      }
+    }
+    this$1.game.handleConnection(response);
+  };
 };
 
 Store.prototype.startGame = function startGame () {
@@ -5038,13 +5049,13 @@ var ServerList = (function (Component$$1) {
     var this$1 = this;
 
     return (
-      h( 'div', { id: "server-list" },
+      h( 'div', { id: "server-list" }, 
         store.state.serverlist.map(function (server) {
           return (
-            h( 'div', { className: "server-list-item" },
-              h( 'span', null, ("Name: " + (server.name)) ),
-              h( 'span', null, ("Map: " + (server.map)) ),
-              h( 'span', null, ("Online: " + (server.online)) ),
+            h( 'div', { className: "server-list-item" }, 
+              h( 'span', null, ("Name: " + (server.name)) ), 
+              h( 'span', null, ("Map: " + (server.map)) ), 
+              h( 'span', null, ("Online: " + (server.online)) ), 
               h( 'button', { onClick: this$1.joinServer.bind(this$1, server.id) }, "Join")
             )
           );
@@ -5066,15 +5077,20 @@ var Login = (function (Component$$1) {
   if ( Component$$1 ) Login.__proto__ = Component$$1;
   Login.prototype = Object.create( Component$$1 && Component$$1.prototype );
   Login.prototype.constructor = Login;
-
+  Login.prototype.login = function login () {
+    var username = document.getElementById("username");
+    store.player =
+      username.value ||
+      ("player" + (Math.floor(Math.random() * (5 - 1 + 1) + 100)));
+    console.log("login success");
+    route("/servers");
+  };
   Login.prototype.render = function render$$1 () {
     return (
-      h( 'div', { id: "login-page" },
-        h( 'h2', null, "Login" ),
-        h( 'span', {
-          onClick: function () {
-            route("/servers");
-          } }, "Server list")
+      h( 'div', { id: "login-page" }, 
+        h( 'label', { htmlFor: "username" }, "Username:"), 
+        h( 'input', { id: "username", type: "text" }), 
+        h( 'div', { onClick: this.login, id: "login-submit" }, "Login")
       )
     );
   };
@@ -5101,17 +5117,19 @@ var Room = (function (Component$$1) {
     if (!store.state.currentserver) { route("/"); }
   };
 
-
   Room.prototype.render = function render$$1 () {
     return (
-      h( 'div', { id: "room-page" },
-        h( 'section', { id: "room-details" },
-          h( 'h3', null, store.state.currentserver.name ),
-          store.state.currentserver.players.map(function (player) {
-            return h( 'span', null, " ", player.key );
-          })
-        ),
-        h( 'span', { onClick: this.startGame }, "Start Game!")
+      h( 'div', { id: "room-page" }, 
+        h( 'section', { id: "room-details" }, 
+          h( 'h3', null, store.state.currentserver.name ), 
+          h( 'section', { id: "players-list" }, 
+            h( 'h4', null, "Players:" ), 
+            store.state.currentserver.players.map(function (player) {
+              return h( 'span', null, " ", player.key );
+            })
+          ), 
+          h( 'span', { id: "start-game", onClick: this.startGame }, "Start Game!")
+        )
       )
     );
   };
@@ -5131,10 +5149,10 @@ var Routes = (function (Component$$1) {
   Routes.prototype.constructor = Routes;
   Routes.prototype.render = function render$$1 () {
     return (
-      h( 'section', { id: "container" },
-        h( Router, null,
-          h( Login, { path: "/" }),
-          h( Serverlist, { path: "/servers" }),
+      h( 'section', { id: "container" }, 
+        h( Router, null, 
+          h( Login, { path: "/" }), 
+          h( Serverlist, { path: "/servers" }), 
           h( Room$1, { path: "/room" })
         )
       )

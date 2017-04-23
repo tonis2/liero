@@ -1,18 +1,12 @@
 import { Renderer, Physics } from "./containers";
 import { Gamefield } from "./gamelogic";
-import { renderConfig } from "./helpers/configs";
+import { renderConfig, timeouts } from "./helpers/configs";
 import store from "../client/store";
 
 const renderer = new Renderer(renderConfig);
 const physics = new Physics();
-
 const gamefield = new Gamefield(renderer, physics);
 const key = renderer.keys.keymap;
-
-const timeouts = {
-  jump: { value: false, time: 1500 },
-  shoot: { value: false, time: 200 }
-};
 
 const animations = currentPlayer => {
   let stats = {
@@ -92,8 +86,8 @@ export default class Game {
   handleConnection(response) {
     switch (response.type) {
       case "init":
-        console.log("Start loading resources");
-        document.getElementById("gameWindow").classList.add("active");
+        console.log("Start loading resources", response);
+        document.getElementsByTagName("body")[0].classList.add("active");
         const resources = [
           { key: "skin", src: response.currentSkin.objects },
           { key: "background", src: response.currentMap.background },
