@@ -1,9 +1,21 @@
 const WebSocketServer = require("uws").Server;
+const path = require("path");
 const wss = new WebSocketServer({ port: 8000 });
 const serverList = require("./serverlist.json");
 const Game = require("./server.collection.js");
 const GameList = new Map();
+const express = require('express');
+const app = express();
 
+const PUBLICFOLDER = './build';
+
+app.use('/public', express.static(path.resolve(PUBLICFOLDER)));
+
+app.get('*', (request, response) => {
+  response.sendFile(path.resolve('build/index.html'));
+});
+
+app.listen(8080);
 serverList.forEach(server => {
   const GameServer = new Game(server);
   GameList.set(GameServer.id, GameServer);
