@@ -191,6 +191,13 @@ var NON_DIMENSION_PROPS = {
 // DOM event types that do not bubble and should be attached via useCapture
 var NON_BUBBLING_EVENTS = { blur:1, error:1, focus:1, load:1, resize:1, scroll:1 };
 
+/** Create an Event handler function that sets a given state property.
+ *	@param {Component} component	The component whose state should be updated
+ *	@param {string} key				A dot-notated key path to update in the component's state
+ *	@param {string} eventPath		A dot-notated key path to the value that should be retrieved from the Event or component
+ *	@returns {function} linkedStateHandler
+ *	@private
+ */
 function createLinkedState(component, key, eventPath) {
 	var path = key.split('.');
 	return function(e) {
@@ -206,6 +213,8 @@ function createLinkedState(component, key, eventPath) {
 		component.setState(state);
 	};
 }
+
+/** Managed queue of dirty components to be re-rendered */
 
 var items = [];
 
@@ -224,6 +233,12 @@ function rerender() {
 	}
 }
 
+/** Check if a VNode is a reference to a stateless functional component.
+ *	A function component is represented as a VNode whose `nodeName` property is a reference to a function.
+ *	If that function is not a Component (ie, has no `.render()` method on a prototype), it is considered a stateless functional component.
+ *	@param {VNode} vnode	A VNode
+ *	@private
+ */
 function isFunctionalComponent(vnode) {
 	var nodeName = vnode && vnode.nodeName;
 	return nodeName && isFunction(nodeName) && !(nodeName.prototype && nodeName.prototype.render);
@@ -239,6 +254,11 @@ function buildFunctionalComponent(vnode, context) {
 	return vnode.nodeName(getNodeProps(vnode), context || EMPTY$1$1);
 }
 
+/** Check if two nodes are equivalent.
+ *	@param {Element} node
+ *	@param {VNode} vnode
+ *	@private
+ */
 function isSameNodeType(node, vnode) {
 	if (isString(vnode)) {
 		return node instanceof Text;
@@ -280,6 +300,7 @@ function getNodeProps(vnode) {
 	return props;
 }
 
+/** Removes a given DOM Node from its parent. */
 function removeNode(node) {
 	var p = node.parentNode;
 	if (p) { p.removeChild(node); }
@@ -373,6 +394,8 @@ function eventProxy(e) {
 	return this._listeners[e.type](options.event && options.event(e) || e);
 }
 
+/** DOM node pool, keyed on nodeName. */
+
 var nodes = {};
 
 function collectNode(node) {
@@ -394,6 +417,7 @@ function createNode(nodeName, isSvg) {
 	return node;
 }
 
+/** Queue of components that have been mounted and are awaiting componentDidMount */
 var mounts = [];
 
 /** Diff recursion count, used to track the end of the diff cycle. */
@@ -705,6 +729,10 @@ function diffAttributes(dom, attrs, old) {
 	}
 }
 
+/** Retains a pool of Components for re-use, keyed on component name.
+ *	Note: since component names are not unique or even necessarily available, these are primarily a form of sharding.
+ *	@private
+ */
 var components = {};
 
 
@@ -732,6 +760,12 @@ function createComponent(Ctor, props, context) {
 	return inst;
 }
 
+/** Set a component's `props` (generally derived from JSX attributes).
+ *	@param {Object} props
+ *	@param {Object} [opts]
+ *	@param {boolean} [opts.renderSync=false]	If `true` and {@link options.syncComponentUpdates} is `true`, triggers synchronous rendering.
+ *	@param {boolean} [opts.render=true]			If `false`, no render will be triggered.
+ */
 function setComponentProps(component, props, opts, context, mountAll) {
 	if (component._disable) { return; }
 	component._disable = true;
@@ -998,6 +1032,16 @@ function unmountComponent(component, remove) {
 	if (component.componentDidUnmount) { component.componentDidUnmount(); }
 }
 
+/** Base Component class, for the ES6 Class method of creating Components
+ *	@public
+ *
+ *	@example
+ *	class MyFoo extends Component {
+ *		render(props, state) {
+ *			return <div />;
+ *		}
+ *	}
+ */
 function Component(props, context) {
 	/** @private */
 	this._dirty = true;
@@ -1085,6 +1129,21 @@ extend(Component.prototype, {
 
 });
 
+/** Render JSX into a `parent` Element.
+ *	@param {VNode} vnode		A (JSX) VNode to render
+ *	@param {Element} parent		DOM element to render into
+ *	@param {Element} [merge]	Attempt to re-use an existing DOM tree rooted at `merge`
+ *	@public
+ *
+ *	@example
+ *	// render a div into <body>:
+ *	render(<div id="hello">hello!</div>, document.body);
+ *
+ *	@example
+ *	// render a "Thing" component into #foo:
+ *	const Thing = ({ name }) => <span>{ name }</span>;
+ *	render(<Thing name="one" />, document.querySelector('#foo'));
+ */
 function render(vnode, parent, merge) {
 	return diff(merge, vnode, {}, false, parent);
 }
@@ -1432,9 +1491,6 @@ Router.route = route;
 Router.Router = Router;
 Router.Route = Route;
 Router.Link = Link;
-
-
-//# sourceMappingURL=preact-router.es.js.map
 
 var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -4476,7 +4532,7 @@ function makeObserver(fn) {
   return Cl;
 }
 
-//# sourceMappingURL=observer.js.map
+
 });
 
 var observer_2 = observer_1$1.observer;
@@ -5049,13 +5105,13 @@ var ServerList = (function (Component$$1) {
     var this$1 = this;
 
     return (
-      h( 'div', { id: "server-list" }, 
+      h( 'div', { id: "server-list" },
         store.state.serverlist.map(function (server) {
           return (
-            h( 'div', { className: "server-list-item" }, 
-              h( 'span', null, ("Name: " + (server.name)) ), 
-              h( 'span', null, ("Map: " + (server.map)) ), 
-              h( 'span', null, ("Online: " + (server.online)) ), 
+            h( 'div', { className: "server-list-item" },
+              h( 'span', null, ("Name: " + (server.name)) ),
+              h( 'span', null, ("Map: " + (server.map)) ),
+              h( 'span', null, ("Online: " + (server.online)) ),
               h( 'button', { onClick: this$1.joinServer.bind(this$1, server.id) }, "Join")
             )
           );
@@ -5087,9 +5143,9 @@ var Login = (function (Component$$1) {
   };
   Login.prototype.render = function render$$1 () {
     return (
-      h( 'div', { id: "login-page" }, 
-        h( 'label', { htmlFor: "username" }, "Username:"), 
-        h( 'input', { id: "username", type: "text" }), 
+      h( 'div', { id: "login-page" },
+        h( 'label', { htmlFor: "username" }, "Username:"),
+        h( 'input', { id: "username", type: "text" }),
         h( 'div', { onClick: this.login, id: "login-submit" }, "Login")
       )
     );
@@ -5119,15 +5175,15 @@ var Room = (function (Component$$1) {
 
   Room.prototype.render = function render$$1 () {
     return (
-      h( 'div', { id: "room-page" }, 
-        h( 'section', { id: "room-details" }, 
-          h( 'h3', null, store.state.currentserver.name ), 
-          h( 'section', { id: "players-list" }, 
-            h( 'h4', null, "Players:" ), 
+      h( 'div', { id: "room-page" },
+        h( 'section', { id: "room-details" },
+          h( 'h3', null, store.state.currentserver.name ),
+          h( 'section', { id: "players-list" },
+            h( 'h4', null, "Players:" ),
             store.state.currentserver.players.map(function (player) {
               return h( 'span', null, " ", player.key );
             })
-          ), 
+          ),
           h( 'span', { id: "start-game", onClick: this.startGame }, "Start Game!")
         )
       )
@@ -5149,10 +5205,10 @@ var Routes = (function (Component$$1) {
   Routes.prototype.constructor = Routes;
   Routes.prototype.render = function render$$1 () {
     return (
-      h( 'section', { id: "container" }, 
-        h( Router, null, 
-          h( Login, { path: "/" }), 
-          h( Serverlist, { path: "/servers" }), 
+      h( 'section', { id: "container" },
+        h( Router, null,
+          h( Login, { path: "/" }),
+          h( Serverlist, { path: "/servers" }),
           h( Room$1, { path: "/room" })
         )
       )
