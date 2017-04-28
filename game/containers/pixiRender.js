@@ -25,15 +25,29 @@ export default class Render {
     this.stage.removeChild(leftPlayer);
   }
 
+  createPlayerName(name) {
+    const style = new PIXI.TextStyle({
+      fontFamily: "Arial",
+      fontSize: 11,
+      fontWeight: "bold",
+      fill: ["#ffffff"]
+    });
+    return new PIXI.Text(name, style);
+  }
+
   addPlayer(player) {
     const PlayerModel = new PIXI.Container();
     const PlayerWorm = new Player(player);
     const PlayerWeapon = new Weapon(player);
+    const PlayerName = this.createPlayerName(player.key);
+    PlayerName.x = -8;
+    PlayerName.y = -35;
     PlayerModel.pos = player.value.pos;
     PlayerModel.x = player.value.x;
     PlayerModel.x = player.value.y;
     PlayerModel.addChild(PlayerWorm);
     PlayerModel.addChild(PlayerWeapon);
+    PlayerModel.addChild(PlayerName);
     PlayerModel.id = player.key;
     PlayerModel.zOrder = 5;
     this.stage.addChild(PlayerModel);

@@ -26,7 +26,7 @@ class Room extends Component {
               return <span> {player.key}</span>;
             })}
           </section>
-          <span id="start-game" onClick={this.startGame}>Start Game!</span>
+          <span id="start-game" onClick={this.startGame}>{store.state.currentserver.active ? "Join game" : "Start server"}</span>
         </section>
       </div>
     );

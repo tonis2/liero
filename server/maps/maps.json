@@ -1,10 +1,10 @@
 [
   {"desert" : {
-        "background":"./images/worlds/desert/desertBG.png",
+        "background":"public/images/worlds/desert/desertBG.png",
         "width":3000,
         "height":2000,
-        "objects":"./images/worlds/desert/objects.json",
-        "tiles":"./images/worlds/desert/tiles.json",
+        "objects":"public/images/worlds/desert/objects.json",
+        "tiles":"public/images/worlds/desert/tiles.json",
         "tilesGrid":6,
         "tilesWidth":10,
         "tilesMap":[

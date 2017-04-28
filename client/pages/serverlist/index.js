@@ -8,7 +8,7 @@ setComponent(Component);
 class ServerList extends Component {
   joinServer(uid) {
     store.joinRoom(uid);
-    route({ url: "/room" });
+    route({ url: "/game" });
   }
 
   render() {

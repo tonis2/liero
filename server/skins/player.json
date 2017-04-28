@@ -1,6 +1,6 @@
 [
   {"default" : {
-        "objects":"./images/player/player.json",
+        "objects":"public/images/player/player.json",
         "polygon":[[30,25],[40,15], [55,25],[55,65],[45,75],[25,75],[7,75],[1,75],[1,65],[7,55],[35,55]]
     }
   }

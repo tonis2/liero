@@ -11,6 +11,7 @@ class GameServer {
     this.players = new Players();
     this.connections = new Map();
     this.map = "desert";
+    this.active = false;
   }
 
   addPlayer(player, connection) {
@@ -31,6 +32,7 @@ class GameServer {
   }
 
   start() {
+    this.active = true;
     this.connections.forEach(connection => {
       connection.send(
         JSON.stringify({
@@ -44,14 +46,26 @@ class GameServer {
   }
 
   //Constantly send updates about player movements
-  startUpdates() {
-    this.connections.forEach(connection => {
+  startUpdates(player) {
+    const FPS = 60;
+    const connection = this.connections.get(player);
       setInterval(() => {
         connection.send(
           JSON.stringify({ type: "update", payload: this.players.getPlayers() })
         );
-      }, 20);
-    });
+      }, 1000/FPS);
+  }
+
+  join(player) {
+    const connection = this.connections.get(player);
+    connection.send(
+      JSON.stringify({
+        type: "init",
+        payload: this.players.getPlayers(),
+        currentMap: map[0][this.map],
+        currentSkin: skin[0].default
+      })
+    );
   }
 
   stringifyData() {
@@ -60,7 +74,8 @@ class GameServer {
       id: this.id,
       online: this.online,
       map: this.map,
-      players: this.players.getPlayers()
+      players: this.players.getPlayers(),
+      active:this.active
     };
   }
 }

@@ -16,7 +16,7 @@ class Routes extends Component {
         <Router>
           <Login path="/" />
           <Serverlist path="/servers" />
-          <Room path="/room" />
+          <Room path="/game" />
         </Router>
       </section>
     );

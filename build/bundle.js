@@ -191,13 +191,6 @@ var NON_DIMENSION_PROPS = {
 // DOM event types that do not bubble and should be attached via useCapture
 var NON_BUBBLING_EVENTS = { blur:1, error:1, focus:1, load:1, resize:1, scroll:1 };
 
-/** Create an Event handler function that sets a given state property.
- *	@param {Component} component	The component whose state should be updated
- *	@param {string} key				A dot-notated key path to update in the component's state
- *	@param {string} eventPath		A dot-notated key path to the value that should be retrieved from the Event or component
- *	@returns {function} linkedStateHandler
- *	@private
- */
 function createLinkedState(component, key, eventPath) {
 	var path = key.split('.');
 	return function(e) {
@@ -213,8 +206,6 @@ function createLinkedState(component, key, eventPath) {
 		component.setState(state);
 	};
 }
-
-/** Managed queue of dirty components to be re-rendered */
 
 var items = [];
 
@@ -233,12 +224,6 @@ function rerender() {
 	}
 }
 
-/** Check if a VNode is a reference to a stateless functional component.
- *	A function component is represented as a VNode whose `nodeName` property is a reference to a function.
- *	If that function is not a Component (ie, has no `.render()` method on a prototype), it is considered a stateless functional component.
- *	@param {VNode} vnode	A VNode
- *	@private
- */
 function isFunctionalComponent(vnode) {
 	var nodeName = vnode && vnode.nodeName;
 	return nodeName && isFunction(nodeName) && !(nodeName.prototype && nodeName.prototype.render);
@@ -254,11 +239,6 @@ function buildFunctionalComponent(vnode, context) {
 	return vnode.nodeName(getNodeProps(vnode), context || EMPTY$1$1);
 }
 
-/** Check if two nodes are equivalent.
- *	@param {Element} node
- *	@param {VNode} vnode
- *	@private
- */
 function isSameNodeType(node, vnode) {
 	if (isString(vnode)) {
 		return node instanceof Text;
@@ -300,7 +280,6 @@ function getNodeProps(vnode) {
 	return props;
 }
 
-/** Removes a given DOM Node from its parent. */
 function removeNode(node) {
 	var p = node.parentNode;
 	if (p) { p.removeChild(node); }
@@ -394,8 +373,6 @@ function eventProxy(e) {
 	return this._listeners[e.type](options.event && options.event(e) || e);
 }
 
-/** DOM node pool, keyed on nodeName. */
-
 var nodes = {};
 
 function collectNode(node) {
@@ -417,7 +394,6 @@ function createNode(nodeName, isSvg) {
 	return node;
 }
 
-/** Queue of components that have been mounted and are awaiting componentDidMount */
 var mounts = [];
 
 /** Diff recursion count, used to track the end of the diff cycle. */
@@ -729,10 +705,6 @@ function diffAttributes(dom, attrs, old) {
 	}
 }
 
-/** Retains a pool of Components for re-use, keyed on component name.
- *	Note: since component names are not unique or even necessarily available, these are primarily a form of sharding.
- *	@private
- */
 var components = {};
 
 
@@ -760,12 +732,6 @@ function createComponent(Ctor, props, context) {
 	return inst;
 }
 
-/** Set a component's `props` (generally derived from JSX attributes).
- *	@param {Object} props
- *	@param {Object} [opts]
- *	@param {boolean} [opts.renderSync=false]	If `true` and {@link options.syncComponentUpdates} is `true`, triggers synchronous rendering.
- *	@param {boolean} [opts.render=true]			If `false`, no render will be triggered.
- */
 function setComponentProps(component, props, opts, context, mountAll) {
 	if (component._disable) { return; }
 	component._disable = true;
@@ -1032,16 +998,6 @@ function unmountComponent(component, remove) {
 	if (component.componentDidUnmount) { component.componentDidUnmount(); }
 }
 
-/** Base Component class, for the ES6 Class method of creating Components
- *	@public
- *
- *	@example
- *	class MyFoo extends Component {
- *		render(props, state) {
- *			return <div />;
- *		}
- *	}
- */
 function Component(props, context) {
 	/** @private */
 	this._dirty = true;
@@ -1129,21 +1085,6 @@ extend(Component.prototype, {
 
 });
 
-/** Render JSX into a `parent` Element.
- *	@param {VNode} vnode		A (JSX) VNode to render
- *	@param {Element} parent		DOM element to render into
- *	@param {Element} [merge]	Attempt to re-use an existing DOM tree rooted at `merge`
- *	@public
- *
- *	@example
- *	// render a div into <body>:
- *	render(<div id="hello">hello!</div>, document.body);
- *
- *	@example
- *	// render a "Thing" component into #foo:
- *	const Thing = ({ name }) => <span>{ name }</span>;
- *	render(<Thing name="one" />, document.querySelector('#foo'));
- */
 function render(vnode, parent, merge) {
 	return diff(merge, vnode, {}, false, parent);
 }
@@ -1491,6 +1432,9 @@ Router.route = route;
 Router.Router = Router;
 Router.Route = Route;
 Router.Link = Link;
+
+
+//# sourceMappingURL=preact-router.es.js.map
 
 var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -4532,7 +4476,7 @@ function makeObserver(fn) {
   return Cl;
 }
 
-
+//# sourceMappingURL=observer.js.map
 });
 
 var observer_2 = observer_1$1.observer;
@@ -4658,15 +4602,29 @@ Render$1.prototype.findDeletedPlayer = function findDeletedPlayer (id) {
   this.stage.removeChild(leftPlayer);
 };
 
+Render$1.prototype.createPlayerName = function createPlayerName (name) {
+  var style = new PIXI.TextStyle({
+    fontFamily: "Arial",
+    fontSize: 11,
+    fontWeight: "bold",
+    fill: ["#ffffff"]
+  });
+  return new PIXI.Text(name, style);
+};
+
 Render$1.prototype.addPlayer = function addPlayer (player) {
   var PlayerModel = new PIXI.Container();
   var PlayerWorm = new Player(player);
   var PlayerWeapon = new Weapon(player);
+  var PlayerName = this.createPlayerName(player.key);
+  PlayerName.x = -8;
+  PlayerName.y = -35;
   PlayerModel.pos = player.value.pos;
   PlayerModel.x = player.value.x;
   PlayerModel.x = player.value.y;
   PlayerModel.addChild(PlayerWorm);
   PlayerModel.addChild(PlayerWeapon);
+  PlayerModel.addChild(PlayerName);
   PlayerModel.id = player.key;
   PlayerModel.zOrder = 5;
   this.stage.addChild(PlayerModel);
@@ -4945,6 +4903,7 @@ var animations = function (currentPlayer) {
 };
 
 var Game = function Game(player) {
+  this.player = player;
   gamefield.player = player;
 };
 
@@ -4970,6 +4929,7 @@ Game.prototype.handleConnection = function handleConnection (response) {
         console.log("Files loaded");
         store.socket.send({
           type: "ready",
+          player:this$1.player,
           serverId: store.state.currentserver.id
         });
         this$1.startAnimations();
@@ -4997,40 +4957,42 @@ Game.prototype.addPlayerToServer = function addPlayerToServer (player, serverId)
 Game.prototype.startServer = function startServer () {
   store.socket.send({
     type: "startServer",
+    player: this.player,
     serverId: store.state.currentserver.id
   });
 };
 
 Game.prototype.startAnimations = function startAnimations () {
-  PIXI.ticker.shared.add(function () {
-    var model = physics.getModel(store.player);
-    physics.container.step(1 / 5);
-    if (model) {
-      renderer.stage.pivot.x = model.position[0] - window.innerWidth / 2;
-      animations(model);
-    }
+  var FPS = 60;
+    setInterval(function () {
+      physics.container.step(1 / 5);
+      var model = physics.getModel(store.player);
+      if (model) {
+        renderer.stage.pivot.x = model.position[0] - window.innerWidth / 2;
+        animations(model);
+      }
 
-    gamefield.actions.shots.forEach(function (bullet) {
-      if (bullet.pos === "R") {
-        bullet.x += Math.cos(bullet.rotation) * bullet.speed;
-        bullet.y += Math.sin(bullet.rotation) * bullet.speed;
-      } else {
-        bullet.x -= Math.cos(bullet.rotation) * bullet.speed;
-        bullet.y -= Math.sin(bullet.rotation) * bullet.speed;
-      }
-      if (
-        bullet.x - model.position[0] > bullet.range ||
-        bullet.x - model.position[0] < -bullet.range ||
-        bullet.x === 0 ||
-        bullet.y - model.position[1] > bullet.range ||
-        bullet.y - model.position[1] < -bullet.range ||
-        bullet.y === 0
-      ) {
-        renderer.stage.removeChild(bullet);
-        gamefield.actions.shots.delete(bullet.uuid);
-      }
-    });
-  });
+      gamefield.actions.shots.forEach(function (bullet) {
+        if (bullet.pos === "R") {
+          bullet.x += Math.cos(bullet.rotation) * bullet.speed;
+          bullet.y += Math.sin(bullet.rotation) * bullet.speed;
+        } else {
+          bullet.x -= Math.cos(bullet.rotation) * bullet.speed;
+          bullet.y -= Math.sin(bullet.rotation) * bullet.speed;
+        }
+        if (
+          bullet.x - model.position[0] > bullet.range ||
+          bullet.x - model.position[0] < -bullet.range ||
+          bullet.x === 0 ||
+          bullet.y - model.position[1] > bullet.range ||
+          bullet.y - model.position[1] < -bullet.range ||
+          bullet.y === 0
+        ) {
+          renderer.stage.removeChild(bullet);
+          gamefield.actions.shots.delete(bullet.uuid);
+        }
+      });
+    }, 1000/FPS);
 };
 
 var Store = function Store() {
@@ -5098,7 +5060,7 @@ var ServerList = (function (Component$$1) {
 
   ServerList.prototype.joinServer = function joinServer (uid) {
     store.joinRoom(uid);
-    route({ url: "/room" });
+    route({ url: "/game" });
   };
 
   ServerList.prototype.render = function render$$1 () {
@@ -5184,7 +5146,7 @@ var Room = (function (Component$$1) {
               return h( 'span', null, " ", player.key );
             })
           ),
-          h( 'span', { id: "start-game", onClick: this.startGame }, "Start Game!")
+          h( 'span', { id: "start-game", onClick: this.startGame }, store.state.currentserver.active ? "Join game" : "Start server")
         )
       )
     );
@@ -5209,7 +5171,7 @@ var Routes = (function (Component$$1) {
         h( Router, null,
           h( Login, { path: "/" }),
           h( Serverlist, { path: "/servers" }),
-          h( Room$1, { path: "/room" })
+          h( Room$1, { path: "/game" })
         )
       )
     );

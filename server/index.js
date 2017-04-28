@@ -1,18 +1,18 @@
 const WebSocketServer = require("uws").Server;
 const path = require("path");
-const wss = new WebSocketServer({ port: 8000 });
+const wss = new WebSocketServer({ port: process.env.PORT || 8000 });
 const serverList = require("./serverlist.json");
 const Game = require("./server.collection.js");
 const GameList = new Map();
-const express = require('express');
+const express = require("express");
 const app = express();
 
-const PUBLICFOLDER = './build';
+const PUBLICFOLDER = "./build";
 
-app.use('/public', express.static(path.resolve(PUBLICFOLDER)));
+app.use("/public", express.static(path.resolve(PUBLICFOLDER)));
 
-app.get('*', (request, response) => {
-  response.sendFile(path.resolve('build/index.html'));
+app.get("*", (request, response) => {
+  response.sendFile(path.resolve("build/index.html"));
 });
 
 app.listen(8080);
@@ -53,7 +53,7 @@ wss.on("connection", ws => {
     }
 
     if (data.type === "ready") {
-      server.startUpdates();
+      server.startUpdates(data.player);
     }
 
     if (data.type === "createServer") {
@@ -63,6 +63,7 @@ wss.on("connection", ws => {
 
     if (data.type === "addPlayer") {
       server.addPlayer(data.player, ws);
+
       sendToAllConnections({
         type: "serversInfo",
         payload: getGamesData()
@@ -71,6 +72,7 @@ wss.on("connection", ws => {
 
     if (data.type === "removePlayer") {
       server.removePlayer(data.player, ws);
+
       sendToAllConnections({
         type: "serversInfo",
         payload: getGamesData()
@@ -78,7 +80,16 @@ wss.on("connection", ws => {
     }
 
     if (data.type === "startServer") {
-      server.start();
+      if (server.active) {
+        server.join(data.player);
+      } else {
+        server.start();
+      }
+
+      sendToAllConnections({
+        type: "serversInfo",
+        payload: getGamesData()
+      });
     }
 
     if (data.type === "destroyServer") {
