@@ -91,6 +91,7 @@ export default class Game {
         document.getElementsByTagName("body")[0].classList.add("active");
         const resources = [
           { key: "skin", src: response.currentSkin.objects },
+          { key: "animationRight", src: response.currentSkin.right },
           { key: "background", src: response.currentMap.background },
           { key: "mapObjects", src: response.currentMap.objects },
           { key: "tiles", src: response.currentMap.tiles }
@@ -141,9 +142,8 @@ export default class Game {
     const FPS = 60;
       setInterval(() => {
         physics.container.step(1 / 5);
-        const model = physics.getModel(store.player);
+        const model = physics.getModel(gamefield.player);
         if (model) {
-          renderer.stage.pivot.x = model.position[0] - window.innerWidth / 2;
           animations(model);
         }
 

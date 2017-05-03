@@ -1,6 +1,6 @@
 const uuidV1 = require("uuid/v1");
 
-const worm = require("./models/worm");
+const playerModel = require("./models/worm");
 
 class Players {
   constructor() {
@@ -28,11 +28,14 @@ class Players {
   }
 
   update(payload) {
-    this.collection.set(payload.player, new worm(payload));
+    const playerModel = this.collection.get(payload.player);
+    playerModel.setParams(payload);
   }
 
-  createPlayer(playerID) {
-    this.add(playerID, new worm());
+  createPlayer(playerID, skin) {
+    const player = new playerModel();
+    player.skin = skin;
+    this.add(playerID, player);
     return playerID;
   }
 }

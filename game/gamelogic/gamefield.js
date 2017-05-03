@@ -25,6 +25,7 @@ export default class Gamefield {
         const physicsPos = this.physics.updatePosition(player);
         playerData.position.x = physicsPos.x;
         playerData.position.y = physicsPos.y;
+        this.renderer.stage.pivot.x = playerData.position.x - window.innerWidth / 2;
         playerData.children[1].rotation = physicsPos.weapon.rotation;
       }
       if (player.value.shot) {

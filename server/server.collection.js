@@ -15,7 +15,7 @@ class GameServer {
   }
 
   addPlayer(player, connection) {
-    const currentPlayer = this.players.createPlayer(player);
+    const currentPlayer = this.players.createPlayer(player, 'worm');
     this.connections.set(currentPlayer, connection);
     this.online += 1;
     //Player has left
