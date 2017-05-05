@@ -1,6 +1,6 @@
 export default class Weapon {
   constructor(params) {
-    this.weapon = new PIXI.Sprite.fromFrame(params.value.weapon.skin);
+    this.weapon = new PIXI.Sprite.fromFrame("uzi");
     this.weapon.x = 5;
     this.weapon.y = 5;
     this.weapon.rotation = params.value.weapon.rotation;

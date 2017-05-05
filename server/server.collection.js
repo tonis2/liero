@@ -39,7 +39,7 @@ class GameServer {
           type: "init",
           payload: this.players.getPlayers(),
           currentMap: map[0][this.map],
-          currentSkin: skin[0].default
+          skins: skin[0]
         })
       );
     });
@@ -63,7 +63,7 @@ class GameServer {
         type: "init",
         payload: this.players.getPlayers(),
         currentMap: map[0][this.map],
-        currentSkin: skin[0].default
+        skins: skin[0]
       })
     );
   }

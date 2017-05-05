@@ -1,6 +1,6 @@
 export default class Bullet {
   constructor(params) {
-    this.bullet = new PIXI.Sprite.fromFrame("bullet");
+    this.bullet = this.createBullet(params.bullet || "default");
     this.bullet.rotation = params.weapon.rotation;
     this.bullet.speed = 5;
     this.bullet.delay = 300;
@@ -18,5 +18,17 @@ export default class Bullet {
       this.bullet.y = params.y + Math.sin(params.weapon.rotation) * 20;
     }
     return this.bullet;
+  }
+
+  createBullet() {
+    const bullet = new PIXI.Graphics();
+    bullet.beginFill(0xff3300);
+    bullet.moveTo(50, 50);
+    bullet.lineTo(30, 50);
+    bullet.lineTo(90, 50);
+    bullet.lineTo(90, 60);
+    bullet.lineTo(30, 60);
+    bullet.endFill();
+    return bullet;
   }
 }

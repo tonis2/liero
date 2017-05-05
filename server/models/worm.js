@@ -2,9 +2,9 @@ class Worm {
   constructor() {
     this.x =  this.generateRandomNumber();
     this.y =  this.generateRandomNumber();
-    this.pos =  'R';
+    this.pos =  'L';
     this.weapon = {
-      skin: 'gun',
+      skin: 'bazooka',
       rotation: 0
     };
     this.shot = null;
@@ -18,6 +18,7 @@ class Worm {
     this.x = params.x;
     this.y = params.y;
     this.pos = params.pos;
+    this.weapon = params.weapon || 'gun';
     this.weapon.rotation = params.weapon.rotation;
     this.shot = params.shot;
   }

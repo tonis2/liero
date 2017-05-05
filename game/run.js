@@ -90,13 +90,13 @@ export default class Game {
         console.log("Start loading resources", response);
         document.getElementsByTagName("body")[0].classList.add("active");
         const resources = [
-          { key: "skin", src: response.currentSkin.objects },
-          { key: "animationRight", src: response.currentSkin.right },
+          { key: "worm", src: response.skins.worm.default },
+          { key: "guns", src: response.skins.guns },
           { key: "background", src: response.currentMap.background },
           { key: "mapObjects", src: response.currentMap.objects },
           { key: "tiles", src: response.currentMap.tiles }
         ];
-        physics.setPolygon("worm", response.currentSkin.polygon);
+        physics.setPolygon("worm", response.skins.worm.polygon);
         renderer.stage.width = response.width;
         renderer.stage.height = response.height;
         renderer.loadResources(resources);

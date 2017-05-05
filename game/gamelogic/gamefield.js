@@ -20,13 +20,26 @@ export default class Gamefield {
         if (player.value.pos !== playerData.pos) {
           this.actions.playerTurn(playerData, player.value);
         }
+
+        if (player.value.x !== playerData.x) {
+          playerData.children[0].loop = true;
+          playerData.children[0].playing = true;
+        } else {
+          playerData.children[0].playing = false;
+          playerData.children[0].loop = false;
+        }
         playerData.pos = player.value.pos;
         //update renderer stats based on server values
         const physicsPos = this.physics.updatePosition(player);
         playerData.position.x = physicsPos.x;
         playerData.position.y = physicsPos.y;
-        this.renderer.stage.pivot.x = playerData.position.x - window.innerWidth / 2;
+
         playerData.children[1].rotation = physicsPos.weapon.rotation;
+
+        if (player.key === this.player) {
+          this.renderer.stage.pivot.x =
+            playerData.position.x - window.innerWidth / 2;
+        }
       }
       if (player.value.shot) {
         this.actions.shoot(JSON.parse(player.value.shot));
@@ -46,6 +59,7 @@ export default class Gamefield {
   initialize(data) {
     return new Promise(resolve => {
       PIXI.loader.load(() => {
+        console.log(PIXI.loader);
         data.payload.forEach(player => {
           this.addPlayer(player);
         });

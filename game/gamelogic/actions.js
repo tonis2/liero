@@ -16,13 +16,13 @@ export default class Actions {
   playerTurn(model, values) {
     const gun = model.children[1], worm = model.children[0];
     if (values.pos === 'L') {
-      worm.scale.x = 1;
-      gun.scale.x = 1;
-      gun.x = -5;
-    } else if (values.pos === 'R') {
       worm.scale.x = -1;
       gun.scale.x = -1;
-      gun.x = 5;
+      gun.x = -25;
+    } else if (values.pos === 'R') {
+      worm.scale.x = 1;
+      gun.scale.x = 1;
+      gun.x = 25;
     }
   }
 }

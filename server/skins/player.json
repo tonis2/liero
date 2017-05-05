@@ -1,9 +1,9 @@
 [
-  {"default" : {
-        "objects":"public/images/skins/worm/worm.json",
-        "left":"public/images/skins/worm/wormLeft.json",
-        "right":"public/images/skins/worm/wormRight.json",
+  {"worm" : {
+        "worm2":"public/images/skins/worm/worm2.json",
+        "default":"public/images/skins/worm/worm.json",
         "polygon":[[30,25],[40,15], [55,25],[55,65],[45,75],[25,75],[7,75],[1,75],[1,65],[7,55],[35,55]]
-    }
+    },
+      "guns":"public/images/guns/guns.json"
   }
 ]
