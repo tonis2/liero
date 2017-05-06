@@ -7,11 +7,16 @@ export default class Gamefield {
     this.renderer = renderer;
     this.physics = physics;
     this.actions = new Actions(renderer.stage);
+    this.ticker = new PIXI.ticker.Ticker();
+    this.data = [];
   }
 
   update(data) {
+    this.data = data;
     data.forEach(player => {
       const playerData = this.renderer.getPlayer(player.key);
+      const physicsPos = this.physics.updatePosition(player);
+
       if (!playerData) {
         // Server sends more players, than client has online
         this.addPlayer(player);
@@ -28,11 +33,6 @@ export default class Gamefield {
           playerData.children[0].playing = false;
           playerData.children[0].loop = false;
         }
-        playerData.pos = player.value.pos;
-        //update renderer stats based on server values
-        const physicsPos = this.physics.updatePosition(player);
-        playerData.position.x = physicsPos.x;
-        playerData.position.y = physicsPos.y;
 
         playerData.children[1].rotation = physicsPos.weapon.rotation;
 
@@ -57,9 +57,10 @@ export default class Gamefield {
   }
 
   initialize(data) {
+    this.predictMovements();
+    this.ticker.start();
     return new Promise(resolve => {
       PIXI.loader.load(() => {
-        console.log(PIXI.loader);
         data.payload.forEach(player => {
           this.addPlayer(player);
         });
@@ -67,6 +68,19 @@ export default class Gamefield {
         loadModels(data.currentMap, this.renderer.stage, this.physics);
         this.renderer.run();
         resolve();
+      });
+    });
+  }
+
+  predictMovements() {
+    this.ticker.add(() => {
+      this.data.forEach(player => {
+        const playerData = this.renderer.getPlayer(player.key);
+        const physicsPos = this.physics.updatePosition(player);
+        playerData.pos = player.value.pos;
+        //update renderer stats based on server values
+        playerData.position.x = physicsPos.x;
+        playerData.position.y = physicsPos.y;
       });
     });
   }
