@@ -1,6 +1,6 @@
 export default class Socket {
   constructor(config) {
-    this.connection = new WebSocket("ws://localhost:8000");
+    this.connection = new WebSocket("ws://85.184.249.97:8000");
     this.connection.onopen = msg => {
       console.log("Socket ready");
       this.ready = true;
