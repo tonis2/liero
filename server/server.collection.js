@@ -56,19 +56,23 @@ class GameServer {
     const FPS = 60;
     const interval = setInterval(() => {
       if (this.connections.size > 0) {
-        this.connections.forEach(connection => {
-          if (connection.ready)
-            connection.send(
-              JSON.stringify({
-                type: "update",
-                payload: this.players.getPlayers()
-              })
-            );
-        });
+        this.sendUpdates();
       } else {
         clearInterval(interval);
       }
     }, 1000 / FPS);
+  }
+
+  sendUpdates() {
+    this.connections.forEach(connection => {
+      if (connection.ready)
+        connection.send(
+          JSON.stringify({
+            type: "update",
+            payload: this.players.getPlayers()
+          })
+        );
+    });
   }
 
   join(player) {

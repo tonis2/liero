@@ -13,22 +13,8 @@ export default class Gamefield {
 
   update(data) {
     this.data = data;
-    this.movePlayers(data);
-  }
-
-  addPlayer(player) {
-    this.physics.addPlayer(player);
-    this.renderer.addPlayer(player);
-    const playerData = this.renderer.getPlayer(player.key);
-    if (playerData) {
-      this.actions.playerTurn(playerData, player.value);
-    }
-  }
-
-  movePlayers(data) {
     data.forEach(player => {
       const playerData = this.renderer.getPlayer(player.key);
-      const physicsPos = this.physics.updatePosition(player);
 
       if (!playerData) {
         // Server sends more players, than client has online
@@ -47,11 +33,7 @@ export default class Gamefield {
           playerData.children[0].loop = false;
         }
 
-        playerData.children[1].rotation = physicsPos.weapon.rotation;
-        playerData.pos = player.value.pos;
         //update renderer stats based on server values
-        playerData.position.x = physicsPos.x;
-        playerData.position.y = physicsPos.y;
         if (player.key === this.player) {
           this.renderer.stage.pivot.x =
             playerData.position.x - window.innerWidth / 2;
@@ -61,6 +43,31 @@ export default class Gamefield {
         this.actions.shoot(JSON.parse(player.value.shot));
       }
     });
+
+    this.updatePositions(data);
+  }
+
+  updatePositions(data) {
+    data.forEach(player => {
+      const playerData = this.renderer.getPlayer(player.key);
+      if (playerData) {
+        const physicsPos = this.physics.updatePosition(player);
+        playerData.children[1].rotation = physicsPos.weapon.rotation;
+        playerData.pos = player.value.pos;
+        //update renderer stats based on server values
+        playerData.position.x = physicsPos.x;
+        playerData.position.y = physicsPos.y;
+      }
+    });
+  }
+
+  addPlayer(player) {
+    this.physics.addPlayer(player);
+    this.renderer.addPlayer(player);
+    const playerData = this.renderer.getPlayer(player.key);
+    if (playerData) {
+      this.actions.playerTurn(playerData, player.value);
+    }
   }
 
   initialize(data) {
@@ -73,9 +80,9 @@ export default class Gamefield {
         this.renderer.addBackground();
         loadModels(data.currentMap, this.renderer.stage, this.physics);
         this.renderer.run();
-        // this.ticker.add(() => {
-        //   this.movePlayers(this.data);
-        // });
+        this.ticker.add(() => {
+          this.updatePositions(this.data);
+        });
         resolve();
       });
     });

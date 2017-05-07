@@ -4768,25 +4768,11 @@ var Gamefield$$1 = function Gamefield$$1(renderer, physics) {
 };
 
 Gamefield$$1.prototype.update = function update (data) {
-  this.data = data;
-  this.movePlayers(data);
-};
-
-Gamefield$$1.prototype.addPlayer = function addPlayer (player) {
-  this.physics.addPlayer(player);
-  this.renderer.addPlayer(player);
-  var playerData = this.renderer.getPlayer(player.key);
-  if (playerData) {
-    this.actions.playerTurn(playerData, player.value);
-  }
-};
-
-Gamefield$$1.prototype.movePlayers = function movePlayers (data) {
     var this$1 = this;
 
+  this.data = data;
   data.forEach(function (player) {
     var playerData = this$1.renderer.getPlayer(player.key);
-    var physicsPos = this$1.physics.updatePosition(player);
 
     if (!playerData) {
       // Server sends more players, than client has online
@@ -4805,11 +4791,7 @@ Gamefield$$1.prototype.movePlayers = function movePlayers (data) {
         playerData.children[0].loop = false;
       }
 
-      playerData.children[1].rotation = physicsPos.weapon.rotation;
-      playerData.pos = player.value.pos;
       //update renderer stats based on server values
-      playerData.position.x = physicsPos.x;
-      playerData.position.y = physicsPos.y;
       if (player.key === this$1.player) {
         this$1.renderer.stage.pivot.x =
           playerData.position.x - window.innerWidth / 2;
@@ -4819,6 +4801,33 @@ Gamefield$$1.prototype.movePlayers = function movePlayers (data) {
       this$1.actions.shoot(JSON.parse(player.value.shot));
     }
   });
+
+  this.updatePositions(data);
+};
+
+Gamefield$$1.prototype.updatePositions = function updatePositions (data) {
+    var this$1 = this;
+
+  data.forEach(function (player) {
+    var playerData = this$1.renderer.getPlayer(player.key);
+    if (playerData) {
+      var physicsPos = this$1.physics.updatePosition(player);
+      playerData.children[1].rotation = physicsPos.weapon.rotation;
+      playerData.pos = player.value.pos;
+      //update renderer stats based on server values
+      playerData.position.x = physicsPos.x;
+      playerData.position.y = physicsPos.y;
+    }
+  });
+};
+
+Gamefield$$1.prototype.addPlayer = function addPlayer (player) {
+  this.physics.addPlayer(player);
+  this.renderer.addPlayer(player);
+  var playerData = this.renderer.getPlayer(player.key);
+  if (playerData) {
+    this.actions.playerTurn(playerData, player.value);
+  }
 };
 
 Gamefield$$1.prototype.initialize = function initialize (data) {
@@ -4833,9 +4842,9 @@ Gamefield$$1.prototype.initialize = function initialize (data) {
       this$1.renderer.addBackground();
       loadModels(data.currentMap, this$1.renderer.stage, this$1.physics);
       this$1.renderer.run();
-      // this.ticker.add(() => {
-      // this.movePlayers(this.data);
-      // });
+      this$1.ticker.add(function () {
+        this$1.updatePositions(this$1.data);
+      });
       resolve();
     });
   });
