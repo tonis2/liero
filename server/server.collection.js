@@ -15,7 +15,8 @@ class GameServer {
   }
 
   addPlayer(player, connection) {
-    const currentPlayer = this.players.createPlayer(player, 'worm');
+    const currentPlayer = this.players.createPlayer(player, "worm");
+    connection.ready = false;
     this.connections.set(currentPlayer, connection);
     this.online += 1;
     //Player has left
@@ -45,15 +46,29 @@ class GameServer {
     });
   }
 
-  //Constantly send updates about player movements
-  startUpdates(player) {
-    const FPS = 60;
+  setReady(player) {
     const connection = this.connections.get(player);
-      setInterval(() => {
-        connection.send(
-          JSON.stringify({ type: "update", payload: this.players.getPlayers() })
-        );
-      }, 1000/FPS);
+    connection.ready = true;
+  }
+
+  //Constantly send updates about player movements
+  startUpdates() {
+    const FPS = 60;
+    const interval = setInterval(() => {
+      if (this.connections.size > 0) {
+        this.connections.forEach(connection => {
+          if (connection.ready)
+            connection.send(
+              JSON.stringify({
+                type: "update",
+                payload: this.players.getPlayers()
+              })
+            );
+        });
+      } else {
+        clearInterval(interval);
+      }
+    }, 1000 / FPS);
   }
 
   join(player) {
@@ -75,7 +90,7 @@ class GameServer {
       online: this.online,
       map: this.map,
       players: this.players.getPlayers(),
-      active:this.active
+      active: this.active
     };
   }
 }

@@ -53,7 +53,7 @@ wss.on("connection", ws => {
     }
 
     if (data.type === "ready") {
-      server.startUpdates(data.player);
+      server.setReady(data.player);
     }
 
     if (data.type === "createServer") {
@@ -90,6 +90,7 @@ wss.on("connection", ws => {
         type: "serversInfo",
         payload: getGamesData()
       });
+      server.startUpdates();
     }
 
     if (data.type === "destroyServer") {

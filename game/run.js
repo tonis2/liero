@@ -105,7 +105,7 @@ export default class Game {
           console.log("Files loaded");
           store.socket.send({
             type: "ready",
-            player:this.player,
+            player: this.player,
             serverId: store.state.currentserver.id
           });
           this.startAnimations();
@@ -140,33 +140,33 @@ export default class Game {
 
   startAnimations() {
     const FPS = 60;
-      setInterval(() => {
-        physics.container.step(1 / 5);
-        const model = physics.getModel(gamefield.player);
-        if (model) {
-          animations(model);
-        }
+    setInterval(() => {
+      physics.container.step(1 / 5);
+      const model = physics.getModel(gamefield.player);
+      if (model) {
+        animations(model);
+      }
 
-        gamefield.actions.shots.forEach(bullet => {
-          if (bullet.pos === "R") {
-            bullet.x += Math.cos(bullet.rotation) * bullet.speed;
-            bullet.y += Math.sin(bullet.rotation) * bullet.speed;
-          } else {
-            bullet.x -= Math.cos(bullet.rotation) * bullet.speed;
-            bullet.y -= Math.sin(bullet.rotation) * bullet.speed;
-          }
-          if (
-            bullet.x - model.position[0] > bullet.range ||
-            bullet.x - model.position[0] < -bullet.range ||
-            bullet.x === 0 ||
-            bullet.y - model.position[1] > bullet.range ||
-            bullet.y - model.position[1] < -bullet.range ||
-            bullet.y === 0
-          ) {
-            renderer.stage.removeChild(bullet);
-            gamefield.actions.shots.delete(bullet.uuid);
-          }
-        });
-      }, 1000/FPS);
+      gamefield.actions.shots.forEach(bullet => {
+        if (bullet.pos === "R") {
+          bullet.x += Math.cos(bullet.rotation) * bullet.speed;
+          bullet.y += Math.sin(bullet.rotation) * bullet.speed;
+        } else {
+          bullet.x -= Math.cos(bullet.rotation) * bullet.speed;
+          bullet.y -= Math.sin(bullet.rotation) * bullet.speed;
+        }
+        if (
+          bullet.x - model.position[0] > bullet.range ||
+          bullet.x - model.position[0] < -bullet.range ||
+          bullet.x === 0 ||
+          bullet.y - model.position[1] > bullet.range ||
+          bullet.y - model.position[1] < -bullet.range ||
+          bullet.y === 0
+        ) {
+          renderer.stage.removeChild(bullet);
+          gamefield.actions.shots.delete(bullet.uuid);
+        }
+      });
+    }, 1000 / FPS);
   }
 }
