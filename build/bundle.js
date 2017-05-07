@@ -4485,7 +4485,8 @@ var observer_3 = observer_1$1.setComponent;
 var Socket = function Socket(config) {
   var this$1 = this;
 
-  this.connection = new WebSocket("ws://localhost:8000");
+  console.log(window.location.href);
+  this.connection = new WebSocket("ws://85.184.249.97:8000");
   this.connection.onopen = function (msg) {
     console.log("Socket ready");
     this$1.ready = true;
@@ -4770,10 +4771,13 @@ var Gamefield$$1 = function Gamefield$$1(renderer, physics) {
 Gamefield$$1.prototype.update = function update (data) {
     var this$1 = this;
 
-  this.data = data;
   data.forEach(function (player) {
     var playerData = this$1.renderer.getPlayer(player.key);
-
+    if (player.value.x > playerData.x) {
+      player.moving = "right";
+    } else {
+      player.moving = "left";
+    }
     if (!playerData) {
       // Server sends more players, than client has online
       this$1.addPlayer(player);
@@ -4782,7 +4786,6 @@ Gamefield$$1.prototype.update = function update (data) {
       if (player.value.pos !== playerData.pos) {
         this$1.actions.playerTurn(playerData, player.value);
       }
-
       if (player.value.x !== playerData.x) {
         playerData.children[0].loop = true;
         playerData.children[0].playing = true;
@@ -4790,36 +4793,25 @@ Gamefield$$1.prototype.update = function update (data) {
         playerData.children[0].playing = false;
         playerData.children[0].loop = false;
       }
-
-      //update renderer stats based on server values
-      if (player.key === this$1.player) {
-        this$1.renderer.stage.pivot.x =
-          playerData.position.x - window.innerWidth / 2;
-      }
+    }
+    var physicsPos = this$1.physics.updatePosition(player);
+    playerData.children[1].rotation = physicsPos.weapon.rotation;
+    playerData.pos = player.value.pos;
+    //update renderer stats based on server values
+    playerData.position.x = physicsPos.x;
+    playerData.position.y = physicsPos.y;
+    //update renderer stats based on server values
+    if (player.key === this$1.player) {
+      this$1.renderer.stage.pivot.x =
+        playerData.position.x - window.innerWidth / 2;
     }
     if (player.value.shot) {
       this$1.actions.shoot(JSON.parse(player.value.shot));
     }
   });
-
-  this.updatePositions(data);
 };
 
-Gamefield$$1.prototype.updatePositions = function updatePositions (data) {
-    var this$1 = this;
-
-  data.forEach(function (player) {
-    var playerData = this$1.renderer.getPlayer(player.key);
-    if (playerData) {
-      var physicsPos = this$1.physics.updatePosition(player);
-      playerData.children[1].rotation = physicsPos.weapon.rotation;
-      playerData.pos = player.value.pos;
-      //update renderer stats based on server values
-      playerData.position.x = physicsPos.x;
-      playerData.position.y = physicsPos.y;
-    }
-  });
-};
+Gamefield$$1.prototype.updatePositions = function updatePositions (data) {};
 
 Gamefield$$1.prototype.addPlayer = function addPlayer (player) {
   this.physics.addPlayer(player);
@@ -4833,7 +4825,6 @@ Gamefield$$1.prototype.addPlayer = function addPlayer (player) {
 Gamefield$$1.prototype.initialize = function initialize (data) {
     var this$1 = this;
 
-  this.ticker.start();
   return new Promise(function (resolve) {
     PIXI.loader.load(function () {
       data.payload.forEach(function (player) {
@@ -4842,9 +4833,7 @@ Gamefield$$1.prototype.initialize = function initialize (data) {
       this$1.renderer.addBackground();
       loadModels(data.currentMap, this$1.renderer.stage, this$1.physics);
       this$1.renderer.run();
-      this$1.ticker.add(function () {
-        this$1.updatePositions(this$1.data);
-      });
+
       resolve();
     });
   });
