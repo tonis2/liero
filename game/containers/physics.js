@@ -10,6 +10,11 @@ export default class Physics {
     this.container.addBody(model);
   }
 
+  findDeletedPlayer(id) {
+    const model = this.getModel(id);
+    this.container.removeBody(model);
+  }
+
   addPlayer(player) {
     const polygonBody = new p2.Body({
       mass: 3,
@@ -31,6 +36,7 @@ export default class Physics {
     currentPlayer.weapon = player.value.weapon;
     currentPlayer.pos = player.value.pos;
     return {
+      model: currentPlayer,
       x: currentPlayer.position[0],
       y: currentPlayer.position[1],
       weapon: currentPlayer.weapon

@@ -17,17 +17,13 @@ const animations = currentPlayer => {
     weapon: {
       rotation: currentPlayer.weapon.rotation
     },
-    shot: null
+    shot: null,
+    jump: null
   };
 
   renderer.keys.on(key.W, () => {
     if (!timeouts.jump.value) {
-      currentPlayer.velocity[1] = -70;
-      if (stats.pos === "R") {
-        currentPlayer.velocity[0] = 10;
-      } else {
-        currentPlayer.velocity[0] = -10;
-      }
+      stats.jump = true;
       timeouts.jump.value = true;
       setTimeout(() => {
         timeouts.jump.value = false;
@@ -36,12 +32,12 @@ const animations = currentPlayer => {
   });
 
   renderer.keys.on(key.A, () => {
-    stats.x -= 3;
+    stats.x -= 6;
     stats.pos = "L";
   });
 
   renderer.keys.on(key.D, () => {
-    stats.x += 3;
+    stats.x += 6;
     stats.pos = "R";
   });
 
@@ -118,6 +114,7 @@ export default class Game {
 
       case "disconnect":
         renderer.findDeletedPlayer(response.payload);
+        physics.findDeletedPlayer(response.payload);
         break;
     }
   }

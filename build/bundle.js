@@ -4485,8 +4485,7 @@ var observer_3 = observer_1$1.setComponent;
 var Socket = function Socket(config) {
   var this$1 = this;
 
-  console.log(window.location.href);
-  this.connection = new WebSocket("ws://85.184.249.97:8000");
+  this.connection = new WebSocket("ws://127.0.0.1:8000");
   this.connection.onopen = function (msg) {
     console.log("Socket ready");
     this$1.ready = true;
@@ -4685,6 +4684,11 @@ Physics.prototype.addModel = function addModel (model) {
   this.container.addBody(model);
 };
 
+Physics.prototype.findDeletedPlayer = function findDeletedPlayer (id) {
+  var model = this.getModel(id);
+  this.container.removeBody(model);
+};
+
 Physics.prototype.addPlayer = function addPlayer (player) {
   var polygonBody = new p2.Body({
     mass: 3,
@@ -4706,6 +4710,7 @@ Physics.prototype.updatePosition = function updatePosition (player) {
   currentPlayer.weapon = player.value.weapon;
   currentPlayer.pos = player.value.pos;
   return {
+    model: currentPlayer,
     x: currentPlayer.position[0],
     y: currentPlayer.position[1],
     weapon: currentPlayer.weapon
@@ -4764,8 +4769,6 @@ var Gamefield$$1 = function Gamefield$$1(renderer, physics) {
   this.renderer = renderer;
   this.physics = physics;
   this.actions = new Actions(renderer.stage);
-  this.ticker = new PIXI.ticker.Ticker();
-  this.data = [];
 };
 
 Gamefield$$1.prototype.update = function update (data) {
@@ -4773,11 +4776,7 @@ Gamefield$$1.prototype.update = function update (data) {
 
   data.forEach(function (player) {
     var playerData = this$1.renderer.getPlayer(player.key);
-    if (player.value.x > playerData.x) {
-      player.moving = "right";
-    } else {
-      player.moving = "left";
-    }
+
     if (!playerData) {
       // Server sends more players, than client has online
       this$1.addPlayer(player);
@@ -4786,6 +4785,7 @@ Gamefield$$1.prototype.update = function update (data) {
       if (player.value.pos !== playerData.pos) {
         this$1.actions.playerTurn(playerData, player.value);
       }
+
       if (player.value.x !== playerData.x) {
         playerData.children[0].loop = true;
         playerData.children[0].playing = true;
@@ -4793,25 +4793,33 @@ Gamefield$$1.prototype.update = function update (data) {
         playerData.children[0].playing = false;
         playerData.children[0].loop = false;
       }
-    }
-    var physicsPos = this$1.physics.updatePosition(player);
-    playerData.children[1].rotation = physicsPos.weapon.rotation;
-    playerData.pos = player.value.pos;
-    //update renderer stats based on server values
-    playerData.position.x = physicsPos.x;
-    playerData.position.y = physicsPos.y;
-    //update renderer stats based on server values
-    if (player.key === this$1.player) {
-      this$1.renderer.stage.pivot.x =
-        playerData.position.x - window.innerWidth / 2;
+      var physicsPos = this$1.physics.updatePosition(player);
+
+      if (player.value.jump) {
+        physicsPos.model.velocity[1] = -70;
+        if (player.value.pos === "R") {
+          physicsPos.model.velocity[0] = 10;
+        } else {
+          physicsPos.model.velocity[0] = -10;
+        }
+      }
+
+      playerData.children[1].rotation = physicsPos.weapon.rotation;
+      playerData.pos = player.value.pos;
+      //update renderer stats based on server values
+      playerData.position.x = physicsPos.x;
+      playerData.position.y = physicsPos.y;
+      //update renderer stats based on server values
+      if (player.key === this$1.player) {
+        this$1.renderer.stage.pivot.x =
+          playerData.position.x - window.innerWidth / 2;
+      }
     }
     if (player.value.shot) {
       this$1.actions.shoot(JSON.parse(player.value.shot));
     }
   });
 };
-
-Gamefield$$1.prototype.updatePositions = function updatePositions (data) {};
 
 Gamefield$$1.prototype.addPlayer = function addPlayer (player) {
   this.physics.addPlayer(player);
@@ -4833,7 +4841,6 @@ Gamefield$$1.prototype.initialize = function initialize (data) {
       this$1.renderer.addBackground();
       loadModels(data.currentMap, this$1.renderer.stage, this$1.physics);
       this$1.renderer.run();
-
       resolve();
     });
   });
@@ -4887,17 +4894,13 @@ var animations = function (currentPlayer) {
     weapon: {
       rotation: currentPlayer.weapon.rotation
     },
-    shot: null
+    shot: null,
+    jump: null
   };
 
   renderer.keys.on(key.W, function () {
     if (!timeouts.jump.value) {
-      currentPlayer.velocity[1] = -70;
-      if (stats.pos === "R") {
-        currentPlayer.velocity[0] = 10;
-      } else {
-        currentPlayer.velocity[0] = -10;
-      }
+      stats.jump = true;
       timeouts.jump.value = true;
       setTimeout(function () {
         timeouts.jump.value = false;
@@ -4906,12 +4909,12 @@ var animations = function (currentPlayer) {
   });
 
   renderer.keys.on(key.A, function () {
-    stats.x -= 3;
+    stats.x -= 6;
     stats.pos = "L";
   });
 
   renderer.keys.on(key.D, function () {
-    stats.x += 3;
+    stats.x += 6;
     stats.pos = "R";
   });
 
@@ -4989,6 +4992,7 @@ Game.prototype.handleConnection = function handleConnection (response) {
 
     case "disconnect":
       renderer.findDeletedPlayer(response.payload);
+      physics.findDeletedPlayer(response.payload);
       break;
   }
 };
