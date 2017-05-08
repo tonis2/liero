@@ -29,16 +29,32 @@ const animations = currentPlayer => {
         timeouts.jump.value = false;
       }, timeouts.jump.time);
     }
+
+    store.socket.send({
+      type: "update",
+      serverId: store.state.currentserver.id,
+      stats
+    });
   });
 
   renderer.keys.on(key.A, () => {
     stats.x -= 6;
     stats.pos = "L";
+    store.socket.send({
+      type: "update",
+      serverId: store.state.currentserver.id,
+      stats
+    });
   });
 
   renderer.keys.on(key.D, () => {
     stats.x += 6;
     stats.pos = "R";
+    store.socket.send({
+      type: "update",
+      serverId: store.state.currentserver.id,
+      stats
+    });
   });
 
   renderer.keys.on(key.UP, () => {
@@ -47,6 +63,11 @@ const animations = currentPlayer => {
     } else {
       stats.weapon.rotation += 0.1;
     }
+    store.socket.send({
+      type: "update",
+      serverId: store.state.currentserver.id,
+      stats
+    });
   });
 
   renderer.keys.on(key.DOWN, () => {
@@ -55,6 +76,11 @@ const animations = currentPlayer => {
     } else {
       stats.weapon.rotation -= 0.1;
     }
+    store.socket.send({
+      type: "update",
+      serverId: store.state.currentserver.id,
+      stats
+    });
   });
 
   renderer.keys.on(key.SHIFT, () => {
@@ -65,12 +91,11 @@ const animations = currentPlayer => {
         timeouts.shoot.value = false;
       }, timeouts.shoot.time);
     }
-  });
-
-  store.socket.send({
-    type: "update",
-    serverId: store.state.currentserver.id,
-    stats
+    store.socket.send({
+      type: "update",
+      serverId: store.state.currentserver.id,
+      stats
+    });
   });
 };
 
@@ -105,6 +130,7 @@ export default class Game {
             serverId: store.state.currentserver.id
           });
           this.startAnimations();
+
         });
         break;
 
@@ -137,8 +163,12 @@ export default class Game {
 
   startAnimations() {
     const FPS = 60;
+
+
+
     setInterval(() => {
       physics.container.step(1 / 5);
+
       const model = physics.getModel(gamefield.player);
       if (model) {
         animations(model);

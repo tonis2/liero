@@ -53,14 +53,14 @@ class GameServer {
 
   //Constantly send updates about player movements
   startUpdates() {
-    const FPS = 60;
+    const LOOP = 45;
     const interval = setInterval(() => {
       if (this.connections.size > 0) {
         this.sendUpdates();
       } else {
         clearInterval(interval);
       }
-    }, 1000 / FPS);
+    }, LOOP);
   }
 
   sendUpdates() {

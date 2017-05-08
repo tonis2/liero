@@ -32,7 +32,6 @@ export default class Physics {
   updatePosition(player) {
     const currentPlayer = this.getModel(player.key);
     currentPlayer.position[0] = player.value.x;
-    currentPlayer.position[1] = player.value.y;
     currentPlayer.weapon = player.value.weapon;
     currentPlayer.pos = player.value.pos;
     return {

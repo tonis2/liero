@@ -4485,7 +4485,7 @@ var observer_3 = observer_1$1.setComponent;
 var Socket = function Socket(config) {
   var this$1 = this;
 
-  this.connection = new WebSocket("ws://127.0.0.1:8000");
+  this.connection = new WebSocket("ws://85.184.249.97:8000");
   this.connection.onopen = function (msg) {
     console.log("Socket ready");
     this$1.ready = true;
@@ -4706,7 +4706,6 @@ Physics.prototype.addPlayer = function addPlayer (player) {
 Physics.prototype.updatePosition = function updatePosition (player) {
   var currentPlayer = this.getModel(player.key);
   currentPlayer.position[0] = player.value.x;
-  currentPlayer.position[1] = player.value.y;
   currentPlayer.weapon = player.value.weapon;
   currentPlayer.pos = player.value.pos;
   return {
@@ -4769,55 +4768,14 @@ var Gamefield$$1 = function Gamefield$$1(renderer, physics) {
   this.renderer = renderer;
   this.physics = physics;
   this.actions = new Actions(renderer.stage);
+  this.ticker = new PIXI.ticker.Ticker();
 };
 
 Gamefield$$1.prototype.update = function update (data) {
     var this$1 = this;
 
   data.forEach(function (player) {
-    var playerData = this$1.renderer.getPlayer(player.key);
-
-    if (!playerData) {
-      // Server sends more players, than client has online
-      this$1.addPlayer(player);
-    } else {
-      //Player has turned
-      if (player.value.pos !== playerData.pos) {
-        this$1.actions.playerTurn(playerData, player.value);
-      }
-
-      if (player.value.x !== playerData.x) {
-        playerData.children[0].loop = true;
-        playerData.children[0].playing = true;
-      } else {
-        playerData.children[0].playing = false;
-        playerData.children[0].loop = false;
-      }
-      var physicsPos = this$1.physics.updatePosition(player);
-
-      if (player.value.jump) {
-        physicsPos.model.velocity[1] = -70;
-        if (player.value.pos === "R") {
-          physicsPos.model.velocity[0] = 10;
-        } else {
-          physicsPos.model.velocity[0] = -10;
-        }
-      }
-
-      playerData.children[1].rotation = physicsPos.weapon.rotation;
-      playerData.pos = player.value.pos;
-      //update renderer stats based on server values
-      playerData.position.x = physicsPos.x;
-      playerData.position.y = physicsPos.y;
-      //update renderer stats based on server values
-      if (player.key === this$1.player) {
-        this$1.renderer.stage.pivot.x =
-          playerData.position.x - window.innerWidth / 2;
-      }
-    }
-    if (player.value.shot) {
-      this$1.actions.shoot(JSON.parse(player.value.shot));
-    }
+    this$1.updatePlayerPosition(player);
   });
 };
 
@@ -4830,9 +4788,42 @@ Gamefield$$1.prototype.addPlayer = function addPlayer (player) {
   }
 };
 
+Gamefield$$1.prototype.updatePlayerPosition = function updatePlayerPosition (player) {
+  var playerData = this.renderer.getPlayer(player.key);
+
+  if (!playerData) {
+    // Server sends more players, than client has online
+    this.addPlayer(player);
+  } else {
+    //Player has turned
+    if (player.value.pos !== playerData.pos) {
+      this.actions.playerTurn(playerData, player.value);
+    }
+
+
+    var physicsPos = this.physics.updatePosition(player);
+
+    if (player.value.jump) {
+      physicsPos.model.velocity[1] = -70;
+      if (player.value.pos === "R") {
+        physicsPos.model.velocity[0] = 10;
+      } else {
+        physicsPos.model.velocity[0] = -10;
+      }
+    }
+
+    playerData.children[1].rotation = physicsPos.weapon.rotation;
+    playerData.pos = player.value.pos;
+  }
+  if (player.value.shot) {
+    this.actions.shoot(JSON.parse(player.value.shot));
+  }
+};
+
 Gamefield$$1.prototype.initialize = function initialize (data) {
     var this$1 = this;
 
+  this.ticker.start();
   return new Promise(function (resolve) {
     PIXI.loader.load(function () {
       data.payload.forEach(function (player) {
@@ -4841,6 +4832,27 @@ Gamefield$$1.prototype.initialize = function initialize (data) {
       this$1.renderer.addBackground();
       loadModels(data.currentMap, this$1.renderer.stage, this$1.physics);
       this$1.renderer.run();
+      this$1.ticker.add(function () {
+        this$1.physics.container.bodies.forEach(function (player) {
+          var renderModel = this$1.renderer.getPlayer(player.id);
+          if (renderModel) {
+            if (renderModel.x !== player.position[0]) {
+              renderModel.children[0].loop = true;
+              renderModel.children[0].playing = true;
+            } else {
+              renderModel.children[0].playing = false;
+              renderModel.children[0].loop = false;
+            }
+            renderModel.x = player.position[0];
+            renderModel.y = player.position[1];
+            //update renderer stats based on server values
+            if (player.id === this$1.player) {
+              this$1.renderer.stage.pivot.x =
+                renderModel.x - window.innerWidth / 2;
+            }
+          }
+        });
+      });
       resolve();
     });
   });
@@ -4906,16 +4918,32 @@ var animations = function (currentPlayer) {
         timeouts.jump.value = false;
       }, timeouts.jump.time);
     }
+
+    store.socket.send({
+      type: "update",
+      serverId: store.state.currentserver.id,
+      stats: stats
+    });
   });
 
   renderer.keys.on(key.A, function () {
     stats.x -= 6;
     stats.pos = "L";
+    store.socket.send({
+      type: "update",
+      serverId: store.state.currentserver.id,
+      stats: stats
+    });
   });
 
   renderer.keys.on(key.D, function () {
     stats.x += 6;
     stats.pos = "R";
+    store.socket.send({
+      type: "update",
+      serverId: store.state.currentserver.id,
+      stats: stats
+    });
   });
 
   renderer.keys.on(key.UP, function () {
@@ -4924,6 +4952,11 @@ var animations = function (currentPlayer) {
     } else {
       stats.weapon.rotation += 0.1;
     }
+    store.socket.send({
+      type: "update",
+      serverId: store.state.currentserver.id,
+      stats: stats
+    });
   });
 
   renderer.keys.on(key.DOWN, function () {
@@ -4932,6 +4965,11 @@ var animations = function (currentPlayer) {
     } else {
       stats.weapon.rotation -= 0.1;
     }
+    store.socket.send({
+      type: "update",
+      serverId: store.state.currentserver.id,
+      stats: stats
+    });
   });
 
   renderer.keys.on(key.SHIFT, function () {
@@ -4942,12 +4980,11 @@ var animations = function (currentPlayer) {
         timeouts.shoot.value = false;
       }, timeouts.shoot.time);
     }
-  });
-
-  store.socket.send({
-    type: "update",
-    serverId: store.state.currentserver.id,
-    stats: stats
+    store.socket.send({
+      type: "update",
+      serverId: store.state.currentserver.id,
+      stats: stats
+    });
   });
 };
 
@@ -4983,6 +5020,7 @@ Game.prototype.handleConnection = function handleConnection (response) {
           serverId: store.state.currentserver.id
         });
         this$1.startAnimations();
+
       });
       break;
 
@@ -5015,8 +5053,12 @@ Game.prototype.startServer = function startServer () {
 
 Game.prototype.startAnimations = function startAnimations () {
   var FPS = 60;
+
+
+
   setInterval(function () {
     physics.container.step(1 / 5);
+
     var model = physics.getModel(gamefield.player);
     if (model) {
       animations(model);
@@ -5117,13 +5159,13 @@ var ServerList = (function (Component$$1) {
     var this$1 = this;
 
     return (
-      h( 'div', { id: "server-list" }, 
+      h( 'div', { id: "server-list" },
         store.state.serverlist.map(function (server) {
           return (
-            h( 'div', { className: "server-list-item" }, 
-              h( 'span', null, ("Name: " + (server.name)) ), 
-              h( 'span', null, ("Map: " + (server.map)) ), 
-              h( 'span', null, ("Online: " + (server.online)) ), 
+            h( 'div', { className: "server-list-item" },
+              h( 'span', null, ("Name: " + (server.name)) ),
+              h( 'span', null, ("Map: " + (server.map)) ),
+              h( 'span', null, ("Online: " + (server.online)) ),
               h( 'button', { onClick: this$1.joinServer.bind(this$1, server.id) }, "Join")
             )
           );
@@ -5155,9 +5197,9 @@ var Login = (function (Component$$1) {
   };
   Login.prototype.render = function render$$1 () {
     return (
-      h( 'div', { id: "login-page" }, 
-        h( 'label', { htmlFor: "username" }, "Username:"), 
-        h( 'input', { id: "username", type: "text" }), 
+      h( 'div', { id: "login-page" },
+        h( 'label', { htmlFor: "username" }, "Username:"),
+        h( 'input', { id: "username", type: "text" }),
         h( 'div', { onClick: this.login, id: "login-submit" }, "Login")
       )
     );
@@ -5187,15 +5229,15 @@ var Room = (function (Component$$1) {
 
   Room.prototype.render = function render$$1 () {
     return (
-      h( 'div', { id: "room-page" }, 
-        h( 'section', { id: "room-details" }, 
-          h( 'h3', null, store.state.currentserver.name ), 
-          h( 'section', { id: "players-list" }, 
-            h( 'h4', null, "Players:" ), 
+      h( 'div', { id: "room-page" },
+        h( 'section', { id: "room-details" },
+          h( 'h3', null, store.state.currentserver.name ),
+          h( 'section', { id: "players-list" },
+            h( 'h4', null, "Players:" ),
             store.state.currentserver.players.map(function (player) {
               return h( 'span', null, " ", player.key );
             })
-          ), 
+          ),
           h( 'span', { id: "start-game", onClick: this.startGame }, store.state.currentserver.active ? "Join game" : "Start server")
         )
       )
@@ -5217,10 +5259,10 @@ var Routes = (function (Component$$1) {
   Routes.prototype.constructor = Routes;
   Routes.prototype.render = function render$$1 () {
     return (
-      h( 'section', { id: "container" }, 
-        h( Router, null, 
-          h( Login, { path: "/" }), 
-          h( Serverlist, { path: "/servers" }), 
+      h( 'section', { id: "container" },
+        h( Router, null,
+          h( Login, { path: "/" }),
+          h( Serverlist, { path: "/servers" }),
           h( Room$1, { path: "/game" })
         )
       )
