@@ -3,6 +3,6 @@ export const renderConfig = {
   height: window.innerHeight - 10
 },
   timeouts = {
-    jump: { value: false, time: 1500 },
+    jump: { value: false, time: 500 },
     shoot: { value: false, time: 200 }
   };

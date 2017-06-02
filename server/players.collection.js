@@ -27,9 +27,9 @@ class Players {
     return response;
   }
 
-  update(payload) {
-    const playerModel = this.collection.get(payload.player);
-    playerModel.setParams(payload);
+  update(player, params) {
+    const playerModel = this.collection.get(player);
+    playerModel.setParams(params);
   }
 
   createPlayer(playerID, skin) {

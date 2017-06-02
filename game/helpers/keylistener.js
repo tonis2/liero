@@ -1,29 +1,18 @@
-import keys from './keymap';
-
 export default class ListenKeys {
-  constructor() {
+  constructor(callback) {
     this.keys = {};
-    this.keymap = keys;
-    this.listenKeys(this.keys);
+    this.listenKeys();
   }
 
-  on(key, callback) {
-    if (this.keys[key]) {
-      callback();
-    } else {
-      return false;
-    }
-  }
-
-  listenKeys(keys) {
+  listenKeys(keys, callback) {
     const keysPressed = e => {
-      keys[e.keyCode] = true;
+      this.keys[e.keyCode] = true;
     };
 
     const keysReleased = e => {
-      keys[e.keyCode] = false;
+      this.keys[e.keyCode] = false;
     };
-
+    
     window.onkeydown = keysPressed;
     window.onkeyup = keysReleased;
   }

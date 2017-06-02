@@ -4485,7 +4485,7 @@ var observer_3 = observer_1$1.setComponent;
 var Socket = function Socket(config) {
   var this$1 = this;
 
-  this.connection = new WebSocket("ws://85.184.249.97:8000");
+  this.connection = new WebSocket("ws://127.0.0.1:8000");
   this.connection.onopen = function (msg) {
     console.log("Socket ready");
     this$1.ready = true;
@@ -4500,43 +4500,6 @@ Socket.prototype.send = function send (message) {
 
 Socket.prototype.error = function error (err) {
   console.log(err);
-};
-
-var keys = {
-  W: 87,
-  S: 83,
-  A: 65,
-  D: 68,
-  UP: 38,
-  DOWN: 40,
-  SHIFT: 16
-};
-
-var ListenKeys = function ListenKeys() {
-  this.keys = {};
-  this.keymap = keys;
-  this.listenKeys(this.keys);
-};
-
-ListenKeys.prototype.on = function on (key, callback) {
-  if (this.keys[key]) {
-    callback();
-  } else {
-    return false;
-  }
-};
-
-ListenKeys.prototype.listenKeys = function listenKeys (keys$$1) {
-  var keysPressed = function (e) {
-    keys$$1[e.keyCode] = true;
-  };
-
-  var keysReleased = function (e) {
-    keys$$1[e.keyCode] = false;
-  };
-
-  window.onkeydown = keysPressed;
-  window.onkeyup = keysReleased;
 };
 
 var Bullet = function Bullet(params) {
@@ -4595,7 +4558,7 @@ var Weapon = function Weapon(params) {
   this.weapon = new PIXI.Sprite.fromFrame("uzi");
   this.weapon.x = 5;
   this.weapon.y = 5;
-  this.weapon.rotation = params.value.weapon.rotation;
+  this.weapon.rotation = params.weapon.rotation;
   this.weapon.anchor.set(0.7, 0.5);
   return this.weapon;
 };
@@ -4604,7 +4567,6 @@ var Render$1 = function Render(config) {
   this.renderer = new PIXI.WebGLRenderer(config.width, config.height);
   this.renderer.backgroundColor = 0x061639;
   this.config = config;
-  this.keys = new ListenKeys();
   this.run = this.run.bind(this);
   this.world = new PIXI.Container();
   this.stage = new PIXI.Container();
@@ -4635,20 +4597,20 @@ Render$1.prototype.createPlayerName = function createPlayerName (name) {
   return new PIXI.Text(name, style);
 };
 
-Render$1.prototype.addPlayer = function addPlayer (player) {
+Render$1.prototype.addPlayer = function addPlayer (player, values) {
   var PlayerModel = new PIXI.Container();
-  var PlayerWorm = new Player(player);
-  var PlayerWeapon = new Weapon(player);
-  var PlayerName = this.createPlayerName(player.key);
+  var PlayerWorm = new Player(values);
+  var PlayerWeapon = new Weapon(values);
+  var PlayerName = this.createPlayerName(player);
   PlayerName.x = -8;
   PlayerName.y = -35;
-  PlayerModel.pos = player.value.pos;
-  PlayerModel.x = player.value.x;
-  PlayerModel.x = player.value.y;
+  PlayerModel.pos = values.pos;
+  PlayerModel.x = values.x;
+  PlayerModel.x = values.y;
   PlayerModel.addChild(PlayerWorm);
   PlayerModel.addChild(PlayerWeapon);
   PlayerModel.addChild(PlayerName);
-  PlayerModel.id = player.key;
+  PlayerModel.id = player;
   PlayerModel.zOrder = 5;
   this.stage.addChild(PlayerModel);
 };
@@ -4689,25 +4651,25 @@ Physics.prototype.findDeletedPlayer = function findDeletedPlayer (id) {
   this.container.removeBody(model);
 };
 
-Physics.prototype.addPlayer = function addPlayer (player) {
+Physics.prototype.addPlayer = function addPlayer (player, values) {
   var polygonBody = new p2.Body({
     mass: 3,
-    position: [player.value.x, player.value.y],
+    position: [values.x, values.y],
     fixedRotation: true,
     velocity: [5, 0]
   });
-  polygonBody.id = player.key;
-  polygonBody.pos = player.value.pos;
-  polygonBody.weapon = player.value.weapon;
+  polygonBody.id = player;
+  polygonBody.pos = values.pos;
+  polygonBody.weapon = values.weapon;
   polygonBody.fromPolygon(this.polygons.get("worm"));
   this.addModel(polygonBody);
 };
 
-Physics.prototype.updatePosition = function updatePosition (player) {
-  var currentPlayer = this.getModel(player.key);
-  currentPlayer.position[0] = player.value.x;
-  currentPlayer.weapon = player.value.weapon;
-  currentPlayer.pos = player.value.pos;
+Physics.prototype.updatePosition = function updatePosition (player, values) {
+  var currentPlayer = this.getModel(player);
+  currentPlayer.position[0] = values.x;
+  currentPlayer.weapon = values.weapon;
+  currentPlayer.pos = values.pos;
   return {
     model: currentPlayer,
     x: currentPlayer.position[0],
@@ -4769,55 +4731,75 @@ var Gamefield$$1 = function Gamefield$$1(renderer, physics) {
   this.physics = physics;
   this.actions = new Actions(renderer.stage);
   this.ticker = new PIXI.ticker.Ticker();
+  this.serverPackages = [];
 };
 
 Gamefield$$1.prototype.update = function update (data) {
-    var this$1 = this;
-
-  data.forEach(function (player) {
-    this$1.updatePlayerPosition(player);
-  });
+  this.serverPackages.push(data);
+  
+  this.serverPackages.slice(0, 2);
 };
 
-Gamefield$$1.prototype.addPlayer = function addPlayer (player) {
-  this.physics.addPlayer(player);
-  this.renderer.addPlayer(player);
-  var playerData = this.renderer.getPlayer(player.key);
+Gamefield$$1.prototype.addPlayer = function addPlayer (player, values) {
+  this.physics.addPlayer(player, values);
+  this.renderer.addPlayer(player, values);
+  var playerData = this.renderer.getPlayer(player);
   if (playerData) {
-    this.actions.playerTurn(playerData, player.value);
+    this.actions.playerTurn(playerData, values);
   }
 };
 
-Gamefield$$1.prototype.updatePlayerPosition = function updatePlayerPosition (player) {
-  var playerData = this.renderer.getPlayer(player.key);
-
+Gamefield$$1.prototype.updatePlayerPosition = function updatePlayerPosition (player, values) {
+  var playerData = this.renderer.getPlayer(player);
   if (!playerData) {
     // Server sends more players, than client has online
-    this.addPlayer(player);
+    this.addPlayer(player, values);
   } else {
     //Player has turned
-    if (player.value.pos !== playerData.pos) {
-      this.actions.playerTurn(playerData, player.value);
+    if (values.pos !== playerData.pos) {
+      this.actions.playerTurn(playerData, values);
     }
 
-
-    var physicsPos = this.physics.updatePosition(player);
-
-    if (player.value.jump) {
+    var physicsPos = this.physics.updatePosition(player, values);
+    if (values.jump) {
       physicsPos.model.velocity[1] = -70;
-      if (player.value.pos === "R") {
+      if (values.pos === "R") {
         physicsPos.model.velocity[0] = 10;
       } else {
         physicsPos.model.velocity[0] = -10;
       }
     }
-
     playerData.children[1].rotation = physicsPos.weapon.rotation;
-    playerData.pos = player.value.pos;
+    playerData.pos = values.pos;
   }
-  if (player.value.shot) {
-    this.actions.shoot(JSON.parse(player.value.shot));
+  if (values.shot) {
+    this.actions.shoot(JSON.parse(values.shot));
   }
+};
+
+Gamefield$$1.prototype.controlPlayerMovement = function controlPlayerMovement () {
+    var this$1 = this;
+
+  this.ticker.add(function () {
+    this$1.physics.container.bodies.forEach(function (player) {
+      var renderModel = this$1.renderer.getPlayer(player.id);
+      if (renderModel) {
+        if (renderModel.x !== player.position[0]) {
+          renderModel.children[0].loop = true;
+          renderModel.children[0].playing = true;
+        } else {
+          renderModel.children[0].playing = false;
+          renderModel.children[0].loop = false;
+        }
+        renderModel.x = player.position[0];
+        renderModel.y = player.position[1];
+        //update renderer stats based on server values
+        if (player.id === this$1.player) {
+          this$1.renderer.stage.pivot.x = renderModel.x - window.innerWidth / 2;
+        }
+      }
+    });
+  });
 };
 
 Gamefield$$1.prototype.initialize = function initialize (data) {
@@ -4827,32 +4809,12 @@ Gamefield$$1.prototype.initialize = function initialize (data) {
   return new Promise(function (resolve) {
     PIXI.loader.load(function () {
       data.payload.forEach(function (player) {
-        this$1.addPlayer(player);
+        this$1.addPlayer(player.key, player.value);
       });
       this$1.renderer.addBackground();
       loadModels(data.currentMap, this$1.renderer.stage, this$1.physics);
       this$1.renderer.run();
-      this$1.ticker.add(function () {
-        this$1.physics.container.bodies.forEach(function (player) {
-          var renderModel = this$1.renderer.getPlayer(player.id);
-          if (renderModel) {
-            if (renderModel.x !== player.position[0]) {
-              renderModel.children[0].loop = true;
-              renderModel.children[0].playing = true;
-            } else {
-              renderModel.children[0].playing = false;
-              renderModel.children[0].loop = false;
-            }
-            renderModel.x = player.position[0];
-            renderModel.y = player.position[1];
-            //update renderer stats based on server values
-            if (player.id === this$1.player) {
-              this$1.renderer.stage.pivot.x =
-                renderModel.x - window.innerWidth / 2;
-            }
-          }
-        });
-      });
+      this$1.controlPlayerMovement();
       resolve();
     });
   });
@@ -4887,106 +4849,43 @@ var renderConfig = {
   width: window.innerWidth,
   height: window.innerHeight - 10
 };
-var timeouts = {
-    jump: { value: false, time: 1500 },
-    shoot: { value: false, time: 200 }
+
+var keymap = [
+  {
+    "W": 87,
+    "S": 83,
+    "A": 65,
+    "D": 68,
+    "UP": 38,
+    "DOWN": 40,
+    "SHIFT": 16
+  }
+]
+;
+
+var ListenKeys = function ListenKeys(callback) {
+  this.keys = {};
+  this.listenKeys();
+};
+
+ListenKeys.prototype.listenKeys = function listenKeys (keys, callback) {
+    var this$1 = this;
+
+  var keysPressed = function (e) {
+    this$1.keys[e.keyCode] = true;
   };
+
+  var keysReleased = function (e) {
+    this$1.keys[e.keyCode] = false;
+  };
+    
+  window.onkeydown = keysPressed;
+  window.onkeyup = keysReleased;
+};
 
 var renderer = new Render$1(renderConfig);
 var physics = new Physics();
 var gamefield = new Gamefield$$1(renderer, physics);
-var key = renderer.keys.keymap;
-
-var animations = function (currentPlayer) {
-  var stats = {
-    player: gamefield.player,
-    y: currentPlayer.position[1],
-    x: currentPlayer.position[0],
-    pos: currentPlayer.pos,
-    weapon: {
-      rotation: currentPlayer.weapon.rotation
-    },
-    shot: null,
-    jump: null
-  };
-
-  renderer.keys.on(key.W, function () {
-    if (!timeouts.jump.value) {
-      stats.jump = true;
-      timeouts.jump.value = true;
-      setTimeout(function () {
-        timeouts.jump.value = false;
-      }, timeouts.jump.time);
-    }
-
-    store.socket.send({
-      type: "update",
-      serverId: store.state.currentserver.id,
-      stats: stats
-    });
-  });
-
-  renderer.keys.on(key.A, function () {
-    stats.x -= 6;
-    stats.pos = "L";
-    store.socket.send({
-      type: "update",
-      serverId: store.state.currentserver.id,
-      stats: stats
-    });
-  });
-
-  renderer.keys.on(key.D, function () {
-    stats.x += 6;
-    stats.pos = "R";
-    store.socket.send({
-      type: "update",
-      serverId: store.state.currentserver.id,
-      stats: stats
-    });
-  });
-
-  renderer.keys.on(key.UP, function () {
-    if (stats.pos === "R") {
-      stats.weapon.rotation -= 0.1;
-    } else {
-      stats.weapon.rotation += 0.1;
-    }
-    store.socket.send({
-      type: "update",
-      serverId: store.state.currentserver.id,
-      stats: stats
-    });
-  });
-
-  renderer.keys.on(key.DOWN, function () {
-    if (stats.pos === "R") {
-      stats.weapon.rotation += 0.1;
-    } else {
-      stats.weapon.rotation -= 0.1;
-    }
-    store.socket.send({
-      type: "update",
-      serverId: store.state.currentserver.id,
-      stats: stats
-    });
-  });
-
-  renderer.keys.on(key.SHIFT, function () {
-    if (!timeouts.shoot.value) {
-      stats.shot = JSON.stringify(stats);
-      timeouts.shoot.value = true;
-      setTimeout(function () {
-        timeouts.shoot.value = false;
-      }, timeouts.shoot.time);
-    }
-    store.socket.send({
-      type: "update",
-      serverId: store.state.currentserver.id,
-      stats: stats
-    });
-  });
-};
 
 var Game = function Game(player) {
   this.player = player;
@@ -5011,7 +4910,6 @@ Game.prototype.handleConnection = function handleConnection (response) {
       renderer.stage.width = response.width;
       renderer.stage.height = response.height;
       renderer.loadResources(resources);
-
       gamefield.initialize(response).then(function () {
         console.log("Files loaded");
         store.socket.send({
@@ -5019,8 +4917,8 @@ Game.prototype.handleConnection = function handleConnection (response) {
           player: this$1.player,
           serverId: store.state.currentserver.id
         });
+        this$1.keylistener = new ListenKeys();
         this$1.startAnimations();
-
       });
       break;
 
@@ -5033,6 +4931,78 @@ Game.prototype.handleConnection = function handleConnection (response) {
       physics.findDeletedPlayer(response.payload);
       break;
   }
+};
+
+Game.prototype.generateUpdatePayload = function generateUpdatePayload (stats) {
+  return {
+    type: "update",
+    player: gamefield.player,
+    keys: this.keylistener.keys,
+    stats: stats,
+    serverId: store.state.currentserver.id,
+    timestamp: new Date()
+  };
+};
+
+Game.prototype.playerMovement = function playerMovement (player) {
+  
+  var timeouts$$1 = {
+    jump: { value: false, time: 1500 },
+    shoot: { value: false, time: 200 }
+  };
+  var stats = {
+    x: player.position[0],
+    y: player.position[1],
+    pos: player.pos,
+    weapon: {
+      rotation: player.weapon.rotation
+    },
+    shot: null,
+    jump: null
+  };
+
+  if (this.keylistener.keys[keymap[0].UP]) {
+    if (stats.pos === "R") {
+      stats.weapon.rotation -= 0.1;
+    } else {
+      stats.weapon.rotation += 0.1;
+    }
+  }
+
+  if (this.keylistener.keys[keymap[0].A]) {
+    stats.x -= 6;
+    stats.pos = "L";
+  }
+
+  if (this.keylistener.keys[keymap[0].D]) {
+    stats.x += 6;
+    stats.pos = "R";
+  }
+
+  if (this.keylistener.keys[keymap[0].W]) {
+    stats.jump = true;
+  }
+
+  if (this.keylistener.keys[keymap[0].DOWN]) {
+    if (stats.pos === "R") {
+      stats.weapon.rotation += 0.1;
+    } else {
+      stats.weapon.rotation -= 0.1;
+    }
+  }
+
+  if (this.keylistener.keys[keymap[0].SHIFT]) {
+    if (!timeouts$$1.shoot.value) {
+      stats.shot = JSON.stringify(stats);
+      timeouts$$1.shoot.value = true;
+      setTimeout(function () {
+        timeouts$$1.shoot.value = false;
+      }, timeouts$$1.shoot.time);
+    }
+  }
+
+  gamefield.updatePlayerPosition(gamefield.player, stats);
+  store.socket.send(this.generateUpdatePayload(stats));
 };
 
 Game.prototype.addPlayerToServer = function addPlayerToServer (player, serverId) {
@@ -5052,18 +5022,15 @@ Game.prototype.startServer = function startServer () {
 };
 
 Game.prototype.startAnimations = function startAnimations () {
+    var this$1 = this;
+
   var FPS = 60;
-
-
-
   setInterval(function () {
-    physics.container.step(1 / 5);
-
     var model = physics.getModel(gamefield.player);
-    if (model) {
-      animations(model);
+    if(model) {
+      this$1.playerMovement(model);
     }
-
+    physics.container.step(1 / 5);
     gamefield.actions.shots.forEach(function (bullet) {
       if (bullet.pos === "R") {
         bullet.x += Math.cos(bullet.rotation) * bullet.speed;

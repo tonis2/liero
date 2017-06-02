@@ -2,6 +2,11 @@ const uuidV1 = require("uuid/v1");
 const Players = require("./players.collection.js");
 const map = require("./maps/maps.json");
 const skin = require("./skins/player.json");
+const keymap = require("./helpers/keymap.json")[0];
+const timeouts = {
+  jump: { value: false, time: 1500 },
+  shoot: { value: false, time: 200 }
+};
 
 class GameServer {
   constructor(params) {
@@ -53,7 +58,7 @@ class GameServer {
 
   //Constantly send updates about player movements
   startUpdates() {
-    const LOOP = 45;
+    const LOOP = 290;
     const interval = setInterval(() => {
       if (this.connections.size > 0) {
         this.sendUpdates();
@@ -85,6 +90,57 @@ class GameServer {
         skins: skin[0]
       })
     );
+  }
+
+  update(payload) {
+    // const player = this.players.get(payload.player);
+    // let stats = {
+    //   x: payload.stats.x,
+    //   y: payload.stats.y,
+    //   pos: player.pos,
+    //   weapon: {
+    //     rotation: player.weapon.rotation
+    //   },
+    //   shot: null,
+    //   jump: null
+    // };
+    // 
+    // if (payload.keys[keymap.UP]) {
+    //   if (stats.pos === "R") {
+    //     stats.weapon.rotation -= 0.1;
+    //   } else {
+    //     stats.weapon.rotation += 0.1;
+    //   }
+    // }
+    // if (payload.keys[keymap.A]) {
+    //   stats.x -= 6;
+    //   stats.pos = "L";
+    // }
+    // if (payload.keys[keymap.D]) {
+    //   stats.x += 6;
+    //   stats.pos = "R";
+    // }
+    // if (payload.keys[keymap.W]) {
+    //   stats.jump = true;
+    // }
+    // if (payload.keys[keymap.DOWN]) {
+    //   if (stats.pos === "R") {
+    //     stats.weapon.rotation += 0.1;
+    //   } else {
+    //     stats.weapon.rotation -= 0.1;
+    //   }
+    // }
+    // if (payload.keys[keymap.SHIFT]) {
+    //   if (!timeouts.shoot.value) {
+    //     stats.shot = JSON.stringify(stats);
+    //     timeouts.shoot.value = true;
+    //     setTimeout(() => {
+    //       timeouts.shoot.value = false;
+    //     }, timeouts.shoot.time);
+    //   }
+    // }
+
+    this.players.update(payload.player, payload.stats);
   }
 
   stringifyData() {

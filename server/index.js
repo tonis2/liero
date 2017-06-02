@@ -49,7 +49,7 @@ wss.on("connection", ws => {
     const server = GameList.get(data.serverId);
 
     if (data.type === "update") {
-      server.players.update(data.stats);
+      server.update(data);
     }
 
     if (data.type === "ready") {

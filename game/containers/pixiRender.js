@@ -1,4 +1,4 @@
-import KeyListener from "../helpers/keylistener";
+
 import { Player, Weapon, Bullet } from "../models";
 
 export default class Render {
@@ -6,7 +6,6 @@ export default class Render {
     this.renderer = new PIXI.WebGLRenderer(config.width, config.height);
     this.renderer.backgroundColor = 0x061639;
     this.config = config;
-    this.keys = new KeyListener();
     this.run = this.run.bind(this);
     this.world = new PIXI.Container();
     this.stage = new PIXI.Container();
@@ -35,20 +34,20 @@ export default class Render {
     return new PIXI.Text(name, style);
   }
 
-  addPlayer(player) {
+  addPlayer(player, values) {
     const PlayerModel = new PIXI.Container();
-    const PlayerWorm = new Player(player);
-    const PlayerWeapon = new Weapon(player);
-    const PlayerName = this.createPlayerName(player.key);
+    const PlayerWorm = new Player(values);
+    const PlayerWeapon = new Weapon(values);
+    const PlayerName = this.createPlayerName(player);
     PlayerName.x = -8;
     PlayerName.y = -35;
-    PlayerModel.pos = player.value.pos;
-    PlayerModel.x = player.value.x;
-    PlayerModel.x = player.value.y;
+    PlayerModel.pos = values.pos;
+    PlayerModel.x = values.x;
+    PlayerModel.x = values.y;
     PlayerModel.addChild(PlayerWorm);
     PlayerModel.addChild(PlayerWeapon);
     PlayerModel.addChild(PlayerName);
-    PlayerModel.id = player.key;
+    PlayerModel.id = player;
     PlayerModel.zOrder = 5;
     this.stage.addChild(PlayerModel);
   }

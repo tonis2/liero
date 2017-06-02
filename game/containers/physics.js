@@ -15,25 +15,25 @@ export default class Physics {
     this.container.removeBody(model);
   }
 
-  addPlayer(player) {
+  addPlayer(player, values) {
     const polygonBody = new p2.Body({
       mass: 3,
-      position: [player.value.x, player.value.y],
+      position: [values.x, values.y],
       fixedRotation: true,
       velocity: [5, 0]
     });
-    polygonBody.id = player.key;
-    polygonBody.pos = player.value.pos;
-    polygonBody.weapon = player.value.weapon;
+    polygonBody.id = player;
+    polygonBody.pos = values.pos;
+    polygonBody.weapon = values.weapon;
     polygonBody.fromPolygon(this.polygons.get("worm"));
     this.addModel(polygonBody);
   }
 
-  updatePosition(player) {
-    const currentPlayer = this.getModel(player.key);
-    currentPlayer.position[0] = player.value.x;
-    currentPlayer.weapon = player.value.weapon;
-    currentPlayer.pos = player.value.pos;
+  updatePosition(player, values) {
+    const currentPlayer = this.getModel(player);
+    currentPlayer.position[0] = values.x;
+    currentPlayer.weapon = values.weapon;
+    currentPlayer.pos = values.pos;
     return {
       model: currentPlayer,
       x: currentPlayer.position[0],

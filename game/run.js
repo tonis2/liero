@@ -1,103 +1,13 @@
 import { Renderer, Physics } from "./containers";
 import { Gamefield } from "./gamelogic";
 import { renderConfig, timeouts } from "./helpers/configs";
+import keymap from "./helpers/keymap.json";
+import Keylistener from "./helpers/keylistener";
 import store from "../client/store";
 
 const renderer = new Renderer(renderConfig);
 const physics = new Physics();
 const gamefield = new Gamefield(renderer, physics);
-const key = renderer.keys.keymap;
-
-const animations = currentPlayer => {
-  let stats = {
-    player: gamefield.player,
-    y: currentPlayer.position[1],
-    x: currentPlayer.position[0],
-    pos: currentPlayer.pos,
-    weapon: {
-      rotation: currentPlayer.weapon.rotation
-    },
-    shot: null,
-    jump: null
-  };
-
-  renderer.keys.on(key.W, () => {
-    if (!timeouts.jump.value) {
-      stats.jump = true;
-      timeouts.jump.value = true;
-      setTimeout(() => {
-        timeouts.jump.value = false;
-      }, timeouts.jump.time);
-    }
-
-    store.socket.send({
-      type: "update",
-      serverId: store.state.currentserver.id,
-      stats
-    });
-  });
-
-  renderer.keys.on(key.A, () => {
-    stats.x -= 6;
-    stats.pos = "L";
-    store.socket.send({
-      type: "update",
-      serverId: store.state.currentserver.id,
-      stats
-    });
-  });
-
-  renderer.keys.on(key.D, () => {
-    stats.x += 6;
-    stats.pos = "R";
-    store.socket.send({
-      type: "update",
-      serverId: store.state.currentserver.id,
-      stats
-    });
-  });
-
-  renderer.keys.on(key.UP, () => {
-    if (stats.pos === "R") {
-      stats.weapon.rotation -= 0.1;
-    } else {
-      stats.weapon.rotation += 0.1;
-    }
-    store.socket.send({
-      type: "update",
-      serverId: store.state.currentserver.id,
-      stats
-    });
-  });
-
-  renderer.keys.on(key.DOWN, () => {
-    if (stats.pos === "R") {
-      stats.weapon.rotation += 0.1;
-    } else {
-      stats.weapon.rotation -= 0.1;
-    }
-    store.socket.send({
-      type: "update",
-      serverId: store.state.currentserver.id,
-      stats
-    });
-  });
-
-  renderer.keys.on(key.SHIFT, () => {
-    if (!timeouts.shoot.value) {
-      stats.shot = JSON.stringify(stats);
-      timeouts.shoot.value = true;
-      setTimeout(() => {
-        timeouts.shoot.value = false;
-      }, timeouts.shoot.time);
-    }
-    store.socket.send({
-      type: "update",
-      serverId: store.state.currentserver.id,
-      stats
-    });
-  });
-};
 
 export default class Game {
   constructor(player) {
@@ -121,7 +31,6 @@ export default class Game {
         renderer.stage.width = response.width;
         renderer.stage.height = response.height;
         renderer.loadResources(resources);
-
         gamefield.initialize(response).then(() => {
           console.log("Files loaded");
           store.socket.send({
@@ -129,8 +38,8 @@ export default class Game {
             player: this.player,
             serverId: store.state.currentserver.id
           });
+          this.keylistener = new Keylistener();
           this.startAnimations();
-
         });
         break;
 
@@ -143,6 +52,78 @@ export default class Game {
         physics.findDeletedPlayer(response.payload);
         break;
     }
+  }
+
+  generateUpdatePayload(stats) {
+    return {
+      type: "update",
+      player: gamefield.player,
+      keys: this.keylistener.keys,
+      stats: stats,
+      serverId: store.state.currentserver.id,
+      timestamp: new Date()
+    };
+  }
+
+  playerMovement(player) {
+  
+    const timeouts = {
+      jump: { value: false, time: 1500 },
+      shoot: { value: false, time: 200 }
+    };
+    let stats = {
+      x: player.position[0],
+      y: player.position[1],
+      pos: player.pos,
+      weapon: {
+        rotation: player.weapon.rotation
+      },
+      shot: null,
+      jump: null
+    };
+
+    if (this.keylistener.keys[keymap[0].UP]) {
+      if (stats.pos === "R") {
+        stats.weapon.rotation -= 0.1;
+      } else {
+        stats.weapon.rotation += 0.1;
+      }
+    }
+
+    if (this.keylistener.keys[keymap[0].A]) {
+      stats.x -= 6;
+      stats.pos = "L";
+    }
+
+    if (this.keylistener.keys[keymap[0].D]) {
+      stats.x += 6;
+      stats.pos = "R";
+    }
+
+    if (this.keylistener.keys[keymap[0].W]) {
+      stats.jump = true;
+    }
+
+    if (this.keylistener.keys[keymap[0].DOWN]) {
+      if (stats.pos === "R") {
+        stats.weapon.rotation += 0.1;
+      } else {
+        stats.weapon.rotation -= 0.1;
+      }
+    }
+
+    if (this.keylistener.keys[keymap[0].SHIFT]) {
+      if (!timeouts.shoot.value) {
+        stats.shot = JSON.stringify(stats);
+        timeouts.shoot.value = true;
+        setTimeout(() => {
+          timeouts.shoot.value = false;
+        }, timeouts.shoot.time);
+      }
+    }
+
+    gamefield.updatePlayerPosition(gamefield.player, stats);
+    store.socket.send(this.generateUpdatePayload(stats));
   }
 
   addPlayerToServer(player, serverId) {
@@ -163,17 +144,12 @@ export default class Game {
 
   startAnimations() {
     const FPS = 60;
-
-
-
     setInterval(() => {
-      physics.container.step(1 / 5);
-
       const model = physics.getModel(gamefield.player);
-      if (model) {
-        animations(model);
+      if(model) {
+        this.playerMovement(model);
       }
-
+      physics.container.step(1 / 5);
       gamefield.actions.shots.forEach(bullet => {
         if (bullet.pos === "R") {
           bullet.x += Math.cos(bullet.rotation) * bullet.speed;
