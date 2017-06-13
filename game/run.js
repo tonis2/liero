@@ -66,7 +66,6 @@ export default class Game {
   }
 
   playerMovement(player) {
-  
     const timeouts = {
       jump: { value: false, time: 1500 },
       shoot: { value: false, time: 200 }
@@ -122,7 +121,7 @@ export default class Game {
       }
     }
 
-    gamefield.updatePlayerPosition(gamefield.player, stats);
+    gamefield.updatePlayerStats(gamefield.player, stats);
     store.socket.send(this.generateUpdatePayload(stats));
   }
 

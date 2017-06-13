@@ -8,13 +8,13 @@ export default class Gamefield {
     this.physics = physics;
     this.actions = new Actions(renderer.stage);
     this.ticker = new PIXI.ticker.Ticker();
-    this.serverPackages = [];
+    this.movementsX = {};
   }
 
   update(data) {
-    this.serverPackages.push(data);
-  
-    this.serverPackages.slice(0, 2);
+    data.forEach(player => {
+      this.updatePlayerStats(player.key, player.value, false);
+    });
   }
 
   addPlayer(player, values) {
@@ -26,8 +26,9 @@ export default class Gamefield {
     }
   }
 
-  updatePlayerPosition(player, values) {
+  updatePlayerStats(player, values, client = true) {
     const playerData = this.renderer.getPlayer(player);
+
     if (!playerData) {
       // Server sends more players, than client has online
       this.addPlayer(player, values);
@@ -38,6 +39,24 @@ export default class Gamefield {
       }
 
       const physicsPos = this.physics.updatePosition(player, values);
+
+      if (!this.movementsX[player]) {
+        this.movementsX[player] = [];
+      }
+
+      if (!client) {
+        if (Math.abs(values.x - this.movementsX[player][1]) > 3) {
+          const distanceDiff =
+            Math.abs(values.x - this.movementsX[player][1]);
+            for (let i; i < distanceDiff / 6; i++) {
+              this.movementsX[player].push(physicsPos.x - distanceDiff - 6 );
+            }
+            
+        } else {
+          this.movementsX[player].push(physicsPos.x);
+        }
+      }
+
       if (values.jump) {
         physicsPos.model.velocity[1] = -70;
         if (values.pos === "R") {
@@ -46,13 +65,17 @@ export default class Gamefield {
           physicsPos.model.velocity[0] = -10;
         }
       }
+
       playerData.children[1].rotation = physicsPos.weapon.rotation;
       playerData.pos = values.pos;
     }
+
     if (values.shot) {
       this.actions.shoot(JSON.parse(values.shot));
     }
   }
+
+  clientSidePrediction() {}
 
   controlPlayerMovement() {
     this.ticker.add(() => {
@@ -66,8 +89,17 @@ export default class Gamefield {
             renderModel.children[0].playing = false;
             renderModel.children[0].loop = false;
           }
-          renderModel.x = player.position[0];
+
           renderModel.y = player.position[1];
+
+          if (this.movementsX[player.id] && this.movementsX[player.id][0]) {
+            renderModel.x = this.movementsX[player.id][0];
+            if (this.movementsX[player.id].length > 2) {
+              this.movementsX[player.id].shift();
+            }
+          } else {
+            renderModel.x = player.position[0];
+          }
           //update renderer stats based on server values
           if (player.id === this.player) {
             this.renderer.stage.pivot.x = renderModel.x - window.innerWidth / 2;

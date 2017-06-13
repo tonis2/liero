@@ -4731,13 +4731,15 @@ var Gamefield$$1 = function Gamefield$$1(renderer, physics) {
   this.physics = physics;
   this.actions = new Actions(renderer.stage);
   this.ticker = new PIXI.ticker.Ticker();
-  this.serverPackages = [];
+  this.movementsX = {};
 };
 
 Gamefield$$1.prototype.update = function update (data) {
-  this.serverPackages.push(data);
-  
-  this.serverPackages.slice(0, 2);
+    var this$1 = this;
+
+  data.forEach(function (player) {
+    this$1.updatePlayerStats(player.key, player.value, false);
+  });
 };
 
 Gamefield$$1.prototype.addPlayer = function addPlayer (player, values) {
@@ -4749,8 +4751,12 @@ Gamefield$$1.prototype.addPlayer = function addPlayer (player, values) {
   }
 };
 
-Gamefield$$1.prototype.updatePlayerPosition = function updatePlayerPosition (player, values) {
+Gamefield$$1.prototype.updatePlayerStats = function updatePlayerStats (player, values, client) {
+    var this$1 = this;
+    if ( client === void 0 ) client = true;
+
   var playerData = this.renderer.getPlayer(player);
+
   if (!playerData) {
     // Server sends more players, than client has online
     this.addPlayer(player, values);
@@ -4761,6 +4767,24 @@ Gamefield$$1.prototype.updatePlayerPosition = function updatePlayerPosition (pla
     }
 
     var physicsPos = this.physics.updatePosition(player, values);
+
+    if (!this.movementsX[player]) {
+      this.movementsX[player] = [];
+    }
+
+    if (!client) {
+      if (Math.abs(values.x - this.movementsX[player][1]) > 3) {
+        var distanceDiff =
+          Math.abs(values.x - this.movementsX[player][1]);
+          for (var i = (void 0); i < distanceDiff / 6; i++) {
+            this$1.movementsX[player].push(physicsPos.x - distanceDiff - 6 );
+          }
+            
+      } else {
+        this.movementsX[player].push(physicsPos.x);
+      }
+    }
+
     if (values.jump) {
       physicsPos.model.velocity[1] = -70;
       if (values.pos === "R") {
@@ -4769,13 +4793,17 @@ Gamefield$$1.prototype.updatePlayerPosition = function updatePlayerPosition (pla
         physicsPos.model.velocity[0] = -10;
       }
     }
+
     playerData.children[1].rotation = physicsPos.weapon.rotation;
     playerData.pos = values.pos;
   }
+
   if (values.shot) {
     this.actions.shoot(JSON.parse(values.shot));
   }
 };
+
+Gamefield$$1.prototype.clientSidePrediction = function clientSidePrediction () {};
 
 Gamefield$$1.prototype.controlPlayerMovement = function controlPlayerMovement () {
     var this$1 = this;
@@ -4791,8 +4819,17 @@ Gamefield$$1.prototype.controlPlayerMovement = function controlPlayerMovement ()
           renderModel.children[0].playing = false;
           renderModel.children[0].loop = false;
         }
-        renderModel.x = player.position[0];
+
         renderModel.y = player.position[1];
+
+        if (this$1.movementsX[player.id] && this$1.movementsX[player.id][0]) {
+          renderModel.x = this$1.movementsX[player.id][0];
+          if (this$1.movementsX[player.id].length > 2) {
+            this$1.movementsX[player.id].shift();
+          }
+        } else {
+          renderModel.x = player.position[0];
+        }
         //update renderer stats based on server values
         if (player.id === this$1.player) {
           this$1.renderer.stage.pivot.x = renderModel.x - window.innerWidth / 2;
@@ -4945,7 +4982,6 @@ Game.prototype.generateUpdatePayload = function generateUpdatePayload (stats) {
 };
 
 Game.prototype.playerMovement = function playerMovement (player) {
-  
   var timeouts$$1 = {
     jump: { value: false, time: 1500 },
     shoot: { value: false, time: 200 }
@@ -5001,7 +5037,7 @@ Game.prototype.playerMovement = function playerMovement (player) {
     }
   }
 
-  gamefield.updatePlayerPosition(gamefield.player, stats);
+  gamefield.updatePlayerStats(gamefield.player, stats);
   store.socket.send(this.generateUpdatePayload(stats));
 };
 
