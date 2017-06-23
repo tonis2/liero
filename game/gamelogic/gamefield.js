@@ -1,5 +1,6 @@
 import { Actions } from "./index";
 import { loadModels } from "../helpers/loadMapModel";
+import { rangeInclusive } from "../helpers/math";
 
 export default class Gamefield {
   constructor(renderer, physics) {
@@ -9,6 +10,7 @@ export default class Gamefield {
     this.actions = new Actions(renderer.stage);
     this.ticker = new PIXI.ticker.Ticker();
     this.movementsX = {};
+    this.wait = false;
   }
 
   update(data) {
@@ -26,6 +28,14 @@ export default class Gamefield {
     }
   }
 
+  pushMovement(player, pos) {
+    this.movementsX[player].push({
+      timestamp: new Date(),
+      pos: pos,
+      done: false
+    });
+  }
+
   updatePlayerStats(player, values, client = true) {
     const playerData = this.renderer.getPlayer(player);
 
@@ -33,29 +43,33 @@ export default class Gamefield {
       // Server sends more players, than client has online
       this.addPlayer(player, values);
     } else {
-      //Player has turned
-      if (values.pos !== playerData.pos) {
-        this.actions.playerTurn(playerData, values);
-      }
-
-      const physicsPos = this.physics.updatePosition(player, values);
-
       if (!this.movementsX[player]) {
         this.movementsX[player] = [];
       }
 
+      //Player has turned
+      if (values.pos !== playerData.pos) {
+        this.actions.playerTurn(playerData, values);
+      }
+          const physicsPos = this.physics.updatePosition(player, values);
       if (!client) {
-        if (Math.abs(values.x - this.movementsX[player][1]) > 3) {
-          const distanceDiff =
-            Math.abs(values.x - this.movementsX[player][1]);
-            for (let i; i < distanceDiff / 6; i++) {
-              this.movementsX[player].push(physicsPos.x - distanceDiff - 6 );
-            }
-            
-        } else {
-          this.movementsX[player].push(physicsPos.x);
+        let distanceDiff = playerData.x - values.x,
+          valuesArray = [playerData.x, values.x];
+        if (distanceDiff < 0) {
+          valuesArray = valuesArray.reverse();
+        }
+
+        if (Math.abs(distanceDiff) > 50) {
+          rangeInclusive(
+            valuesArray[1],
+            valuesArray[0],
+            6
+          ).forEach(number => {
+            this.pushMovement(player, number);
+          });
         }
       }
+
 
       if (values.jump) {
         physicsPos.model.velocity[1] = -70;
@@ -92,14 +106,22 @@ export default class Gamefield {
 
           renderModel.y = player.position[1];
 
-          if (this.movementsX[player.id] && this.movementsX[player.id][0]) {
-            renderModel.x = this.movementsX[player.id][0];
-            if (this.movementsX[player.id].length > 2) {
-              this.movementsX[player.id].shift();
+          if (
+            this.movementsX[player.id] &&
+            this.movementsX[player.id].length > 0
+          ) {
+            this.movementsX[player.id] = this.movementsX[player.id]
+              .filter(position => !position.done)
+              .sort((a, b) => b.timestamp - a.timestamp);
+
+            if (this.movementsX[player.id][0]) {
+              renderModel.x = this.movementsX[player.id][0].pos;
+              player.position[0] = renderModel.x;
+              console.log(this.movementsX[player.id][0].pos);
+              this.movementsX[player.id][0].done = true;
             }
-          } else {
-            renderModel.x = player.position[0];
           }
+
           //update renderer stats based on server values
           if (player.id === this.player) {
             this.renderer.stage.pivot.x = renderModel.x - window.innerWidth / 2;
@@ -110,7 +132,6 @@ export default class Gamefield {
   }
 
   initialize(data) {
-    this.ticker.start();
     return new Promise(resolve => {
       PIXI.loader.load(() => {
         data.payload.forEach(player => {
@@ -118,8 +139,9 @@ export default class Gamefield {
         });
         this.renderer.addBackground();
         loadModels(data.currentMap, this.renderer.stage, this.physics);
-        this.renderer.run();
         this.controlPlayerMovement();
+        this.renderer.run();
+        this.ticker.start();
         resolve();
       });
     });

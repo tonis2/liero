@@ -144,7 +144,7 @@ export default class Game {
   startAnimations() {
     const FPS = 60;
     setInterval(() => {
-      const model = physics.getModel(gamefield.player);
+      const model = physics.getPlayer(gamefield.player);
       if(model) {
         this.playerMovement(model);
       }

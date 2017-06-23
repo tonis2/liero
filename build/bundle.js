@@ -4647,7 +4647,7 @@ Physics.prototype.addModel = function addModel (model) {
 };
 
 Physics.prototype.findDeletedPlayer = function findDeletedPlayer (id) {
-  var model = this.getModel(id);
+  var model = this.getPlayer(id);
   this.container.removeBody(model);
 };
 
@@ -4666,7 +4666,7 @@ Physics.prototype.addPlayer = function addPlayer (player, values) {
 };
 
 Physics.prototype.updatePosition = function updatePosition (player, values) {
-  var currentPlayer = this.getModel(player);
+  var currentPlayer = this.getPlayer(player);
   currentPlayer.position[0] = values.x;
   currentPlayer.weapon = values.weapon;
   currentPlayer.pos = values.pos;
@@ -4682,7 +4682,7 @@ Physics.prototype.setPolygon = function setPolygon (id, polygon) {
   this.polygons.set(id, polygon);
 };
 
-Physics.prototype.getModel = function getModel (id) {
+Physics.prototype.getPlayer = function getPlayer (id) {
   return this.container.bodies.filter(function (item) { return item.id === id; })[0];
 };
 
@@ -4725,6 +4725,21 @@ var loadModels = function (data, stage, physics) {
   });
 };
 
+function rangeInclusive (start, stop, stepSize) {
+  if (stop == null) {
+    stop = start;
+    start = 1;
+  }
+  if (stepSize == null) { stepSize = 1; }
+
+  var steps = (stop - start) / stepSize;
+
+  var set = [];
+  for (var step = 0; step <= steps; step++) { set.push(start + step * stepSize); }
+
+  return set
+}
+
 var Gamefield$$1 = function Gamefield$$1(renderer, physics) {
   this.player = null;
   this.renderer = renderer;
@@ -4732,6 +4747,7 @@ var Gamefield$$1 = function Gamefield$$1(renderer, physics) {
   this.actions = new Actions(renderer.stage);
   this.ticker = new PIXI.ticker.Ticker();
   this.movementsX = {};
+  this.wait = false;
 };
 
 Gamefield$$1.prototype.update = function update (data) {
@@ -4751,6 +4767,14 @@ Gamefield$$1.prototype.addPlayer = function addPlayer (player, values) {
   }
 };
 
+Gamefield$$1.prototype.pushMovement = function pushMovement (player, pos) {
+  this.movementsX[player].push({
+    timestamp: new Date(),
+    pos: pos,
+    done: false
+  });
+};
+
 Gamefield$$1.prototype.updatePlayerStats = function updatePlayerStats (player, values, client) {
     var this$1 = this;
     if ( client === void 0 ) client = true;
@@ -4761,29 +4785,33 @@ Gamefield$$1.prototype.updatePlayerStats = function updatePlayerStats (player, v
     // Server sends more players, than client has online
     this.addPlayer(player, values);
   } else {
-    //Player has turned
-    if (values.pos !== playerData.pos) {
-      this.actions.playerTurn(playerData, values);
-    }
-
-    var physicsPos = this.physics.updatePosition(player, values);
-
     if (!this.movementsX[player]) {
       this.movementsX[player] = [];
     }
 
+    //Player has turned
+    if (values.pos !== playerData.pos) {
+      this.actions.playerTurn(playerData, values);
+    }
+        var physicsPos = this.physics.updatePosition(player, values);
     if (!client) {
-      if (Math.abs(values.x - this.movementsX[player][1]) > 3) {
-        var distanceDiff =
-          Math.abs(values.x - this.movementsX[player][1]);
-          for (var i = (void 0); i < distanceDiff / 6; i++) {
-            this$1.movementsX[player].push(physicsPos.x - distanceDiff - 6 );
-          }
-            
-      } else {
-        this.movementsX[player].push(physicsPos.x);
+      var distanceDiff = playerData.x - values.x,
+        valuesArray = [playerData.x, values.x];
+      if (distanceDiff < 0) {
+        valuesArray = valuesArray.reverse();
+      }
+
+      if (Math.abs(distanceDiff) > 50) {
+        rangeInclusive(
+          valuesArray[1],
+          valuesArray[0],
+          6
+        ).forEach(function (number) {
+          this$1.pushMovement(player, number);
+        });
       }
     }
+
 
     if (values.jump) {
       physicsPos.model.velocity[1] = -70;
@@ -4822,14 +4850,22 @@ Gamefield$$1.prototype.controlPlayerMovement = function controlPlayerMovement ()
 
         renderModel.y = player.position[1];
 
-        if (this$1.movementsX[player.id] && this$1.movementsX[player.id][0]) {
-          renderModel.x = this$1.movementsX[player.id][0];
-          if (this$1.movementsX[player.id].length > 2) {
-            this$1.movementsX[player.id].shift();
+        if (
+          this$1.movementsX[player.id] &&
+          this$1.movementsX[player.id].length > 0
+        ) {
+          this$1.movementsX[player.id] = this$1.movementsX[player.id]
+            .filter(function (position) { return !position.done; })
+            .sort(function (a, b) { return b.timestamp - a.timestamp; });
+
+          if (this$1.movementsX[player.id][0]) {
+            renderModel.x = this$1.movementsX[player.id][0].pos;
+            player.position[0] = renderModel.x;
+            console.log(this$1.movementsX[player.id][0].pos);
+            this$1.movementsX[player.id][0].done = true;
           }
-        } else {
-          renderModel.x = player.position[0];
         }
+
         //update renderer stats based on server values
         if (player.id === this$1.player) {
           this$1.renderer.stage.pivot.x = renderModel.x - window.innerWidth / 2;
@@ -4842,7 +4878,6 @@ Gamefield$$1.prototype.controlPlayerMovement = function controlPlayerMovement ()
 Gamefield$$1.prototype.initialize = function initialize (data) {
     var this$1 = this;
 
-  this.ticker.start();
   return new Promise(function (resolve) {
     PIXI.loader.load(function () {
       data.payload.forEach(function (player) {
@@ -4850,8 +4885,9 @@ Gamefield$$1.prototype.initialize = function initialize (data) {
       });
       this$1.renderer.addBackground();
       loadModels(data.currentMap, this$1.renderer.stage, this$1.physics);
-      this$1.renderer.run();
       this$1.controlPlayerMovement();
+      this$1.renderer.run();
+      this$1.ticker.start();
       resolve();
     });
   });
@@ -5062,7 +5098,7 @@ Game.prototype.startAnimations = function startAnimations () {
 
   var FPS = 60;
   setInterval(function () {
-    var model = physics.getModel(gamefield.player);
+    var model = physics.getPlayer(gamefield.player);
     if(model) {
       this$1.playerMovement(model);
     }

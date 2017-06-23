@@ -11,7 +11,7 @@ export default class Physics {
   }
 
   findDeletedPlayer(id) {
-    const model = this.getModel(id);
+    const model = this.getPlayer(id);
     this.container.removeBody(model);
   }
 
@@ -30,7 +30,7 @@ export default class Physics {
   }
 
   updatePosition(player, values) {
-    const currentPlayer = this.getModel(player);
+    const currentPlayer = this.getPlayer(player);
     currentPlayer.position[0] = values.x;
     currentPlayer.weapon = values.weapon;
     currentPlayer.pos = values.pos;
@@ -46,7 +46,7 @@ export default class Physics {
     this.polygons.set(id, polygon);
   }
 
-  getModel(id) {
+  getPlayer(id) {
     return this.container.bodies.filter(item => item.id === id)[0];
   }
 }
