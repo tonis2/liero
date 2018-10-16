@@ -9,3 +9,5 @@ I tried to do oldschool Liero in browser
 ```js
 npm install && npm run start
 ```
+
+![](liero.gif)
