@@ -1,6 +1,6 @@
-const WebSocketServer = require("uws").Server;
+const WebSocket = require("ws");
 const path = require("path");
-const wss = new WebSocketServer({ port: process.env.PORT || 8000 });
+const wss = new WebSocket.Server({ port: process.env.PORT || 8000 });
 const serverList = require("./serverlist.json");
 const Game = require("./server.collection.js");
 const GameList = new Map();

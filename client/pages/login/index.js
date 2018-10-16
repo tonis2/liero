@@ -1,4 +1,3 @@
-import "./login.scss";
 import { h, Component } from "preact";
 import { route } from "preact-router";
 import store from "../../store";

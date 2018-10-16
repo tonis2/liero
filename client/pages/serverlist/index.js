@@ -1,4 +1,3 @@
-import "./list.scss";
 import { h, Component } from "preact";
 import { route } from "preact-router";
 import { observer, setComponent } from "mobx-observer";

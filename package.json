@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "set NODE_ENV=development && rollup --watch --config ./config.js",
     "build": "export NODE_ENV=production && rollup --config ./config.js",
-    "server": " nodemon ./server/index.js"
+    "start": " node ./server/index.js"
   },
   "keywords": [
     "rolup",
@@ -29,10 +29,9 @@
     "rollup-plugin-node-resolve": "latest",
     "rollup-plugin-npm": "^2.0.0",
     "rollup-plugin-replace": "^1.1.1",
-    "rollup-plugin-scss": "^0.2.0",
     "rollup-plugin-uglify": "latest",
     "rollup-watch": "^2.5.0",
     "uuid": "^3.0.1",
-    "uws": "^0.12.0"
+    "ws": "^6.1.0"
   }
 }

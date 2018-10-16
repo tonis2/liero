@@ -1,4 +1,3 @@
-import "./styles/main.scss";
 import Router from "preact-router";
 import { setComponent } from "mobx-observer";
 import { h, render, Component } from "preact";
